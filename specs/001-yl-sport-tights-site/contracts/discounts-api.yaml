@@ -1,0 +1,669 @@
+openapi: 3.0.3
+info:
+  title: YL Sport Tights - Discounts API
+  description: |
+    API endpoints for managing discount codes in the YL Sport Tights e-commerce system.
+    Supports discount code validation (customer-facing) and CRUD operations (admin-only).
+  version: 1.0.0
+  contact:
+    name: YL Sport Development Team
+    email: dev@yl-sport.com
+
+servers:
+  - url: https://yl-sport.vercel.app/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Local development server
+
+tags:
+  - name: Validation
+    description: Public discount code validation
+  - name: Management
+    description: Admin discount code management
+
+paths:
+  /discounts/validate:
+    post:
+      tags:
+        - Validation
+      summary: Validate discount code
+      description: |
+        Validates a discount code entered by customer at checkout.
+        Checks if code exists, is active, not expired, hasn't reached usage limit,
+        and order meets minimum value requirement.
+        Public endpoint (no authentication required).
+      operationId: validateDiscountCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - orderSubtotal
+              properties:
+                code:
+                  type: string
+                  description: Discount code entered by customer (case-insensitive)
+                  minLength: 3
+                  maxLength: 20
+                  example: LAUNCH50
+                orderSubtotal:
+                  type: number
+                  format: decimal
+                  description: Order subtotal before discount and shipping
+                  minimum: 0
+                  example: 299.00
+      responses:
+        '200':
+          description: Discount code validation result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidDiscountResponse'
+                  - $ref: '#/components/schemas/InvalidDiscountResponse'
+              examples:
+                validFixedAmount:
+                  value:
+                    valid: true
+                    discount:
+                      code: LAUNCH50
+                      type: FIXED_AMOUNT
+                      value: 50.00
+                      discountAmount: 50.00
+                      newTotal: 249.00
+                validPercentage:
+                  value:
+                    valid: true
+                    discount:
+                      code: SUMMER20
+                      type: PERCENTAGE
+                      value: 20.00
+                      discountAmount: 59.80
+                      newTotal: 239.20
+                invalidExpired:
+                  value:
+                    valid: false
+                    error: הקוד פג תוקף
+                    code: EXPIRED
+                invalidMinimum:
+                  value:
+                    valid: false
+                    error: סכום הזמנה מינימלי לקוד זה הוא 200 ₪
+                    code: MINIMUM_NOT_MET
+                    minimumRequired: 200.00
+        '400':
+          description: Invalid request (missing fields or invalid format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /discounts:
+    get:
+      tags:
+        - Management
+      summary: List all discount codes
+      description: |
+        Retrieve a list of all discount codes with filtering and pagination.
+        **Requires admin authentication.**
+      operationId: listDiscountCodes
+      security:
+        - AdminSession: []
+      parameters:
+        - name: isActive
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Search by code name
+          required: false
+          schema:
+            type: string
+            example: LAUNCH
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Items per page
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: List of discount codes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DiscountCode'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+              example:
+                data:
+                  - id: disc123
+                    code: LAUNCH50
+                    type: FIXED_AMOUNT
+                    value: 50.00
+                    validFrom: "2025-10-01T00:00:00Z"
+                    validUntil: "2025-10-31T23:59:59Z"
+                    usageLimit: null
+                    usageCount: 15
+                    minimumOrderValue: null
+                    isActive: true
+                    createdAt: "2025-10-01T00:00:00Z"
+                    updatedAt: "2025-10-21T10:00:00Z"
+                  - id: disc456
+                    code: SUMMER20
+                    type: PERCENTAGE
+                    value: 20.00
+                    validFrom: "2025-10-15T00:00:00Z"
+                    validUntil: "2026-01-15T23:59:59Z"
+                    usageLimit: 100
+                    usageCount: 42
+                    minimumOrderValue: 200.00
+                    isActive: true
+                    createdAt: "2025-10-15T00:00:00Z"
+                    updatedAt: "2025-10-21T10:00:00Z"
+                pagination:
+                  page: 1
+                  limit: 20
+                  total: 5
+                  totalPages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Management
+      summary: Create discount code
+      description: |
+        Create a new discount code with specified parameters.
+        **Requires admin authentication.**
+      operationId: createDiscountCode
+      security:
+        - AdminSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDiscountCodeRequest'
+            examples:
+              fixedAmount:
+                summary: Fixed amount discount (50 ILS off)
+                value:
+                  code: LAUNCH50
+                  type: FIXED_AMOUNT
+                  value: 50.00
+                  validFrom: "2025-10-01T00:00:00Z"
+                  validUntil: "2025-10-31T23:59:59Z"
+                  usageLimit: null
+                  minimumOrderValue: null
+                  isActive: true
+              percentage:
+                summary: Percentage discount (20% off)
+                value:
+                  code: SUMMER20
+                  type: PERCENTAGE
+                  value: 20.00
+                  validFrom: "2025-10-15T00:00:00Z"
+                  validUntil: "2026-01-15T23:59:59Z"
+                  usageLimit: 100
+                  minimumOrderValue: 200.00
+                  isActive: true
+      responses:
+        '201':
+          description: Discount code created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountCode'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                duplicateCode:
+                  value:
+                    error: קוד הנחה זה כבר קיים
+                    field: code
+                    code: DUPLICATE_CODE
+                invalidDateRange:
+                  value:
+                    error: תאריך סיום חייב להיות אחרי תאריך התחלה
+                    field: validUntil
+                    code: INVALID_DATE_RANGE
+                invalidPercentage:
+                  value:
+                    error: אחוז חייב להיות בין 1 ל-100
+                    field: value
+                    code: INVALID_PERCENTAGE
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /discounts/{id}:
+    get:
+      tags:
+        - Management
+      summary: Get discount code details
+      description: |
+        Retrieve full details for a specific discount code.
+        **Requires admin authentication.**
+      operationId: getDiscountCode
+      security:
+        - AdminSession: []
+      parameters:
+        - name: id
+          in: path
+          description: Discount code ID
+          required: true
+          schema:
+            type: string
+            example: disc123
+      responses:
+        '200':
+          description: Discount code details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Discount code not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags:
+        - Management
+      summary: Update discount code
+      description: |
+        Update an existing discount code. Can modify any field except `code` (code is immutable).
+        **Requires admin authentication.**
+      operationId: updateDiscountCode
+      security:
+        - AdminSession: []
+      parameters:
+        - name: id
+          in: path
+          description: Discount code ID
+          required: true
+          schema:
+            type: string
+            example: disc123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDiscountCodeRequest'
+            examples:
+              deactivateCode:
+                summary: Deactivate discount code
+                value:
+                  isActive: false
+              extendExpiry:
+                summary: Extend expiry date
+                value:
+                  validUntil: "2025-12-31T23:59:59Z"
+              increaseLimit:
+                summary: Increase usage limit
+                value:
+                  usageLimit: 200
+      responses:
+        '200':
+          description: Discount code updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscountCode'
+        '400':
+          description: Invalid update data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Discount code not found
+
+    delete:
+      tags:
+        - Management
+      summary: Delete discount code
+      description: |
+        Delete a discount code. Note: This will fail if any orders reference this code.
+        Consider deactivating (isActive = false) instead of deleting to preserve order history.
+        **Requires admin authentication.**
+      operationId: deleteDiscountCode
+      security:
+        - AdminSession: []
+      parameters:
+        - name: id
+          in: path
+          description: Discount code ID
+          required: true
+          schema:
+            type: string
+            example: disc123
+      responses:
+        '204':
+          description: Discount code deleted successfully
+        '400':
+          description: Cannot delete code (referenced by orders)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: לא ניתן למחוק קוד הנחה המקושר להזמנות קיימות
+                code: REFERENCED_BY_ORDERS
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Discount code not found
+
+components:
+  schemas:
+    ValidDiscountResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          enum: [true]
+          example: true
+        discount:
+          type: object
+          properties:
+            code:
+              type: string
+              example: LAUNCH50
+            type:
+              $ref: '#/components/schemas/DiscountType'
+            value:
+              type: number
+              format: decimal
+              description: Raw discount value (50 for 50 ILS or 20 for 20%)
+              example: 50.00
+            discountAmount:
+              type: number
+              format: decimal
+              description: Calculated discount amount in ILS
+              example: 50.00
+            newTotal:
+              type: number
+              format: decimal
+              description: Order subtotal after discount (before shipping)
+              example: 249.00
+
+    InvalidDiscountResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          enum: [false]
+          example: false
+        error:
+          type: string
+          description: Human-readable error message in Hebrew
+          example: הקוד פג תוקף
+        code:
+          type: string
+          description: Machine-readable error code
+          enum:
+            - NOT_FOUND
+            - INACTIVE
+            - EXPIRED
+            - NOT_YET_VALID
+            - USAGE_LIMIT_REACHED
+            - MINIMUM_NOT_MET
+          example: EXPIRED
+        minimumRequired:
+          type: number
+          format: decimal
+          description: Minimum order value required (if code = MINIMUM_NOT_MET)
+          example: 200.00
+
+    DiscountCode:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Internal discount code ID (CUID)
+          example: disc123
+        code:
+          type: string
+          description: Discount code (uppercase, alphanumeric + hyphens/underscores)
+          example: LAUNCH50
+        type:
+          $ref: '#/components/schemas/DiscountType'
+        value:
+          type: number
+          format: decimal
+          description: Discount value (50 for 50 ILS or 20 for 20%)
+          example: 50.00
+        validFrom:
+          type: string
+          format: date-time
+          description: Start of validity period
+          example: "2025-10-01T00:00:00Z"
+        validUntil:
+          type: string
+          format: date-time
+          description: End of validity period
+          example: "2025-10-31T23:59:59Z"
+        usageLimit:
+          type: integer
+          nullable: true
+          description: Maximum number of uses (null = unlimited)
+          example: null
+        usageCount:
+          type: integer
+          description: Current number of uses
+          example: 15
+        minimumOrderValue:
+          type: number
+          format: decimal
+          nullable: true
+          description: Minimum order subtotal required (null = no minimum)
+          example: null
+        isActive:
+          type: boolean
+          description: Whether code is currently active (admin can toggle)
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-10-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-10-21T10:00:00Z"
+
+    CreateDiscountCodeRequest:
+      type: object
+      required:
+        - code
+        - type
+        - value
+        - validFrom
+        - validUntil
+      properties:
+        code:
+          type: string
+          description: Discount code (will be converted to uppercase)
+          pattern: '^[A-Z0-9_-]{3,20}$'
+          minLength: 3
+          maxLength: 20
+          example: LAUNCH50
+        type:
+          $ref: '#/components/schemas/DiscountType'
+        value:
+          type: number
+          format: decimal
+          description: Discount value (1-100 for percentage, positive for fixed amount)
+          minimum: 0
+          example: 50.00
+        validFrom:
+          type: string
+          format: date-time
+          description: Start of validity period
+          example: "2025-10-01T00:00:00Z"
+        validUntil:
+          type: string
+          format: date-time
+          description: End of validity period
+          example: "2025-10-31T23:59:59Z"
+        usageLimit:
+          type: integer
+          nullable: true
+          description: Maximum number of uses (null or 0 = unlimited)
+          minimum: 0
+          example: null
+        minimumOrderValue:
+          type: number
+          format: decimal
+          nullable: true
+          description: Minimum order subtotal required (null = no minimum)
+          minimum: 0
+          example: null
+        isActive:
+          type: boolean
+          description: Whether code is active
+          default: true
+          example: true
+
+    UpdateDiscountCodeRequest:
+      type: object
+      description: All fields optional (only include fields to update)
+      properties:
+        type:
+          $ref: '#/components/schemas/DiscountType'
+        value:
+          type: number
+          format: decimal
+          minimum: 0
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        usageLimit:
+          type: integer
+          nullable: true
+          minimum: 0
+        minimumOrderValue:
+          type: number
+          format: decimal
+          nullable: true
+          minimum: 0
+        isActive:
+          type: boolean
+
+    DiscountType:
+      type: string
+      enum:
+        - PERCENTAGE
+        - FIXED_AMOUNT
+      description: |
+        Discount type:
+        - PERCENTAGE: Discount as percentage (e.g., 20%)
+        - FIXED_AMOUNT: Fixed amount off (e.g., 50 ILS)
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 5
+        totalPages:
+          type: integer
+          example: 1
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message in Hebrew
+          example: קוד הנחה לא קיים
+        field:
+          type: string
+          description: Field name that caused the error
+          example: code
+        code:
+          type: string
+          description: Machine-readable error code
+          example: NOT_FOUND
+
+  securitySchemes:
+    AdminSession:
+      type: apiKey
+      in: cookie
+      name: admin_session
+      description: Admin session cookie (set after login)
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: נדרשת התחברות
+            code: UNAUTHORIZED
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: אין לך הרשאה לבצע פעולה זו
+            code: FORBIDDEN

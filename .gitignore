@@ -1,0 +1,251 @@
+# =============================================================================
+# YL Sport Tights - Git Ignore
+# =============================================================================
+# This file tells Git which files and directories to ignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Environment Variables (CRITICAL - Never commit secrets!)
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Keep .env.example (this is safe to commit)
+!.env.example
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+node_modules/
+/.pnp
+.pnp.js
+
+# -----------------------------------------------------------------------------
+# Next.js Build Output
+# -----------------------------------------------------------------------------
+/.next/
+/out/
+.next
+out
+
+# Next.js cache
+.next/cache/
+
+# Build artifacts
+build/
+dist/
+
+# -----------------------------------------------------------------------------
+# Testing
+# -----------------------------------------------------------------------------
+coverage/
+*.lcov
+.nyc_output
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# -----------------------------------------------------------------------------
+# Debugging
+# -----------------------------------------------------------------------------
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Debug logs
+*.log
+
+# -----------------------------------------------------------------------------
+# TypeScript
+# -----------------------------------------------------------------------------
+*.tsbuildinfo
+next-env.d.ts
+
+# -----------------------------------------------------------------------------
+# Prisma
+# -----------------------------------------------------------------------------
+# Keep schema.prisma and migrations (these should be committed)
+# Ignore generated Prisma Client
+node_modules/.prisma/
+
+# Local database files (if using SQLite for dev)
+*.db
+*.db-journal
+*.sqlite
+
+# -----------------------------------------------------------------------------
+# Operating System Files
+# -----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# -----------------------------------------------------------------------------
+# IDEs and Editors
+# -----------------------------------------------------------------------------
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains IDEs (WebStorm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# -----------------------------------------------------------------------------
+# Temporary Files
+# -----------------------------------------------------------------------------
+tmp/
+temp/
+*.tmp
+
+# -----------------------------------------------------------------------------
+# Vercel
+# -----------------------------------------------------------------------------
+.vercel
+
+# -----------------------------------------------------------------------------
+# Local Development
+# -----------------------------------------------------------------------------
+# Local uploads (if storing files locally during development)
+uploads/
+public/uploads/
+
+# Local generated files
+generated/
+
+# -----------------------------------------------------------------------------
+# Email Templates (React Email)
+# -----------------------------------------------------------------------------
+# .react-email is auto-generated
+.react-email/
+
+# -----------------------------------------------------------------------------
+# Miscellaneous
+# -----------------------------------------------------------------------------
+# Sentry
+.sentryclirc
+
+# Bundle analyzer output
+.next/analyze/
+
+# Storybook
+storybook-static/
+
+# Lock files (choose one based on package manager)
+# Keep the lock file for your chosen package manager, ignore others
+
+# If using npm:
+# package-lock.json (keep this)
+# yarn.lock (ignore)
+# pnpm-lock.yaml (ignore)
+
+# If using yarn:
+# yarn.lock (keep this)
+# package-lock.json (ignore)
+# pnpm-lock.yaml (ignore)
+
+# If using pnpm:
+# pnpm-lock.yaml (keep this)
+# package-lock.json (ignore)
+# yarn.lock (ignore)
+
+# Ignore all lock files except the one you use:
+# Uncomment the appropriate lines:
+# yarn.lock
+# pnpm-lock.yaml
+# package-lock.json
+
+# -----------------------------------------------------------------------------
+# Production Secrets (if accidentally created locally)
+# -----------------------------------------------------------------------------
+secrets/
+*.key
+*.pem
+*.cert
+*.crt
+
+# -----------------------------------------------------------------------------
+# Analytics & Monitoring
+# -----------------------------------------------------------------------------
+# If downloading analytics data locally
+analytics/
+reports/
+
+# -----------------------------------------------------------------------------
+# Notes & Documentation (Personal)
+# -----------------------------------------------------------------------------
+# Keep official docs, ignore personal notes
+TODO.md
+NOTES.md
+.notes/
+notes/
+
+# -----------------------------------------------------------------------------
+# Backups
+# -----------------------------------------------------------------------------
+*.backup
+*.bak
+*.old
+
+# -----------------------------------------------------------------------------
+# Archives
+# -----------------------------------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# But keep static assets archives if needed
+!public/assets/*.zip
+
+# -----------------------------------------------------------------------------
+# Git Merge Conflicts
+# -----------------------------------------------------------------------------
+*.orig
+
+# =============================================================================
+# End of .gitignore
+# =============================================================================
+# Remember:
+# - Review this file periodically
+# - Update as project grows
+# - Never commit .env.local or other files with secrets
+# - Use 'git status' to check what will be committed
+# =============================================================================

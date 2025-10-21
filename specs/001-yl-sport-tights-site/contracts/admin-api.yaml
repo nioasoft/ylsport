@@ -1,0 +1,501 @@
+openapi: 3.0.3
+info:
+  title: YL Sport Tights - Admin API
+  description: |
+    API endpoints for admin dashboard authentication and analytics.
+    All endpoints require admin authentication via session cookie.
+  version: 1.0.0
+  contact:
+    name: YL Sport Development Team
+    email: dev@yl-sport.com
+
+servers:
+  - url: https://yl-sport.vercel.app/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Local development server
+
+tags:
+  - name: Authentication
+    description: Admin login and session management
+  - name: Analytics
+    description: Sales and order analytics
+
+paths:
+  /admin/login:
+    post:
+      tags:
+        - Authentication
+      summary: Admin login
+      description: |
+        Authenticate admin user with username and password.
+        Returns session cookie on successful authentication.
+      operationId: adminLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: Admin username
+                  minLength: 3
+                  maxLength: 50
+                  example: admin
+                password:
+                  type: string
+                  description: Admin password
+                  format: password
+                  minLength: 8
+                  example: SecurePassword123!
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+                example: admin_session=abc123xyz; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  admin:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: admin123
+                      username:
+                        type: string
+                        example: admin
+                  redirectUrl:
+                    type: string
+                    description: URL to redirect to after login
+                    example: /admin
+        '400':
+          description: Invalid request (missing fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: שם משתמש או סיסמה שגויים
+                code: INVALID_CREDENTIALS
+        '429':
+          description: Too many login attempts (rate limiting)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: יותר מדי ניסיונות התחברות. נסה שוב בעוד 15 דקות
+                code: TOO_MANY_ATTEMPTS
+
+  /admin/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Admin logout
+      description: |
+        Invalidate admin session and clear session cookie.
+      operationId: adminLogout
+      security:
+        - AdminSession: []
+      responses:
+        '200':
+          description: Logout successful
+          headers:
+            Set-Cookie:
+              description: Expired session cookie
+              schema:
+                type: string
+                example: admin_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  redirectUrl:
+                    type: string
+                    example: /admin/login
+
+  /admin/session:
+    get:
+      tags:
+        - Authentication
+      summary: Verify admin session
+      description: |
+        Check if current session is valid and return admin info.
+        Used for protecting admin routes client-side.
+      operationId: verifyAdminSession
+      security:
+        - AdminSession: []
+      responses:
+        '200':
+          description: Valid session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authenticated:
+                    type: boolean
+                    example: true
+                  admin:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: admin123
+                      username:
+                        type: string
+                        example: admin
+        '401':
+          description: Invalid or expired session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authenticated:
+                    type: boolean
+                    example: false
+
+  /admin/analytics:
+    get:
+      tags:
+        - Analytics
+      summary: Get sales analytics
+      description: |
+        Retrieve aggregate sales data including total orders, revenue,
+        and breakdown by product size.
+        **Requires admin authentication.**
+      operationId: getSalesAnalytics
+      security:
+        - AdminSession: []
+      parameters:
+        - name: startDate
+          in: query
+          description: Start date for analytics period (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2025-10-01T00:00:00Z"
+        - name: endDate
+          in: query
+          description: End date for analytics period (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2025-10-31T23:59:59Z"
+      responses:
+        '200':
+          description: Sales analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesAnalytics'
+              example:
+                totalOrders: 156
+                totalRevenue: 43524.00
+                averageOrderValue: 279.00
+                ordersByStatus:
+                  PENDING_PAYMENT: 3
+                  PAID: 12
+                  PROCESSING: 8
+                  SHIPPED: 85
+                  DELIVERED: 45
+                  CANCELLED: 3
+                ordersBySize:
+                  S: 28
+                  M: 65
+                  L: 48
+                  XL: 15
+                ordersByShippingMethod:
+                  STANDARD_DELIVERY: 132
+                  SELF_PICKUP: 24
+                discountCodesUsed:
+                  - code: LAUNCH50
+                    usageCount: 42
+                    totalDiscount: 2100.00
+                  - code: SUMMER20
+                    usageCount: 18
+                    totalDiscount: 1074.00
+                revenueByDay:
+                  - date: "2025-10-01"
+                    revenue: 1395.00
+                    orderCount: 5
+                  - date: "2025-10-02"
+                    revenue: 837.00
+                    orderCount: 3
+                period:
+                  startDate: "2025-10-01T00:00:00Z"
+                  endDate: "2025-10-31T23:59:59Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/analytics/export:
+    get:
+      tags:
+        - Analytics
+      summary: Export analytics data
+      description: |
+        Export sales data as CSV file for external analysis.
+        **Requires admin authentication.**
+      operationId: exportAnalytics
+      security:
+        - AdminSession: []
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: format
+          in: query
+          description: Export format
+          required: false
+          schema:
+            type: string
+            enum: [csv, xlsx]
+            default: csv
+      responses:
+        '200':
+          description: Analytics data file
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: attachment; filename="sales-analytics-2025-10.csv"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  schemas:
+    SalesAnalytics:
+      type: object
+      properties:
+        totalOrders:
+          type: integer
+          description: Total number of orders in period
+          example: 156
+        totalRevenue:
+          type: number
+          format: decimal
+          description: Total revenue in ILS (sum of order totals where status != CANCELLED)
+          example: 43524.00
+        averageOrderValue:
+          type: number
+          format: decimal
+          description: Average order value in ILS
+          example: 279.00
+        ordersByStatus:
+          type: object
+          description: Order count breakdown by status
+          properties:
+            PENDING_PAYMENT:
+              type: integer
+              example: 3
+            PAID:
+              type: integer
+              example: 12
+            PROCESSING:
+              type: integer
+              example: 8
+            SHIPPED:
+              type: integer
+              example: 85
+            DELIVERED:
+              type: integer
+              example: 45
+            CANCELLED:
+              type: integer
+              example: 3
+        ordersBySize:
+          type: object
+          description: Order count breakdown by product size
+          properties:
+            S:
+              type: integer
+              example: 28
+            M:
+              type: integer
+              example: 65
+            L:
+              type: integer
+              example: 48
+            XL:
+              type: integer
+              example: 15
+        ordersByShippingMethod:
+          type: object
+          description: Order count breakdown by shipping method
+          properties:
+            STANDARD_DELIVERY:
+              type: integer
+              example: 132
+            SELF_PICKUP:
+              type: integer
+              example: 24
+        discountCodesUsed:
+          type: array
+          description: Discount codes used in period with statistics
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+                example: LAUNCH50
+              usageCount:
+                type: integer
+                description: Number of times code was used
+                example: 42
+              totalDiscount:
+                type: number
+                format: decimal
+                description: Total discount amount given in ILS
+                example: 2100.00
+        revenueByDay:
+          type: array
+          description: Daily revenue breakdown
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                example: "2025-10-01"
+              revenue:
+                type: number
+                format: decimal
+                example: 1395.00
+              orderCount:
+                type: integer
+                example: 5
+        period:
+          type: object
+          description: Analytics period
+          properties:
+            startDate:
+              type: string
+              format: date-time
+              example: "2025-10-01T00:00:00Z"
+            endDate:
+              type: string
+              format: date-time
+              example: "2025-10-31T23:59:59Z"
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message in Hebrew
+          example: נדרשת התחברות
+        code:
+          type: string
+          description: Machine-readable error code
+          example: UNAUTHORIZED
+        field:
+          type: string
+          description: Field name that caused the error (if applicable)
+          example: username
+
+  securitySchemes:
+    AdminSession:
+      type: apiKey
+      in: cookie
+      name: admin_session
+      description: |
+        Admin session cookie set after successful login.
+        Cookie is HTTP-only, Secure (HTTPS only), SameSite=Lax, and expires after 24 hours.
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: נדרשת התחברות
+            code: UNAUTHORIZED
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: אין לך הרשאה לבצע פעולה זו
+            code: FORBIDDEN
+
+# Security Notes:
+#
+# Session Management:
+# - Sessions stored in database or Redis (not JWT for better security)
+# - Session ID is cryptographically random (32+ bytes)
+# - Sessions expire after 24 hours of inactivity
+# - Logout invalidates session immediately
+#
+# Password Requirements:
+# - Minimum 8 characters
+# - Must include uppercase, lowercase, number, and special character
+# - Passwords hashed with bcrypt (salt rounds = 12)
+# - Rate limiting: Max 5 failed login attempts per IP per 15 minutes
+#
+# CSRF Protection:
+# - All state-changing operations (POST, PATCH, DELETE) require CSRF token
+# - CSRF token stored in session and validated on each request
+# - Next.js API routes include built-in CSRF protection
+#
+# Rate Limiting:
+# - Login endpoint: 5 attempts per 15 minutes per IP
+# - Other endpoints: 100 requests per minute per IP
+# - Implemented via Vercel Edge Middleware or third-party service (Upstash)

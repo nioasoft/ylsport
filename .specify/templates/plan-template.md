@@ -31,7 +31,64 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+This section verifies compliance with the YL Sport Tights Constitution (.specify/memory/constitution.md v2.0.0).
+
+**עקרון 1: פשטות ומיקוד (Simplicity & Focus)**
+- [ ] פיצ'ר תומך במוצר יחיד (לא מוסיף מוצרים נוספים)?
+- [ ] UI נשאר נקי ומינימליסטי (אין דיסטרקציות)?
+- [ ] תהליך רכישה נשאר אינטואיטיבי (zero configuration)?
+- [ ] אין over-engineering (רק מה שצריך עכשיו)?
+- [ ] כל אלמנט חדש מוצדק בצורך אמיתי?
+
+**עקרון 2: ביצועים ונגישות (Performance & Accessibility)**
+- [ ] זמן טעינה יישאר מתחת ל-2 שניות?
+- [ ] SEO לא נפגע (structured data, meta tags עודכנו)?
+- [ ] נגישות WCAG 2.1 AA נשמרת?
+- [ ] מובייל-first approach מיושם?
+- [ ] ציון Lighthouse צפוי להישאר > 90?
+- [ ] תאימות דפדפנים נשמרת (95%)?
+
+**עקרון 3: אמינות ומקצועיות (Trust & Professionalism)**
+- [ ] שקיפות מלאה (מחירים, משלוח, החזרות)?
+- [ ] אבטחת מידע לא נפגעה (HTTPS, encryption)?
+- [ ] פרטי תשלום לא נאגרים (Cardcom only)?
+- [ ] תמונות ותוכן נשארים אותנטיים?
+- [ ] ייצוג המאמנת (יפעת לוי) ברור?
+- [ ] מידע קשר נגיש?
+
+**עקרון 4: חוויית משתמש מעולה (Excellent UX)**
+- [ ] הסיפור של המוצר נשמר (בעיה → פיתרון → המלצות)?
+- [ ] תמונות איכותיות (6 מינימום)?
+- [ ] CTA בולט וזמין (sticky "הוסף לעגלה")?
+- [ ] משוב מיידי לכל פעולה (<100ms)?
+- [ ] טפסים פשוטים (מינימום שדות, validation בזמן אמת)?
+- [ ] תהליך רכישה < 3 דקות?
+- [ ] אישורים נשלחים תוך דקה?
+
+**סטנדרטים טכניים**
+- [ ] קוד נקי (שמות ברורים, פונקציות קצרות, linting)?
+- [ ] ארכיטקטורה פשוטה (Next.js conventions, הפרדת concerns)?
+- [ ] בדיקות קריטיות מתוכננות (checkout flow, forms, Cardcom)?
+- [ ] תלויות מינימליות (shadcn/ui מועדף)?
+
+**חוקי עיצוב**
+- [ ] צבעים עומדים בפלטה (#F7D2D9 וגווניו)?
+- [ ] פונט עברי ברור (Assistant/Rubik)?
+- [ ] RTL מלא?
+- [ ] אלמנטים נגישים (contrast ratio, sizes)?
+
+**אבטחה ופרטיות**
+- [ ] אחסון מינימלי של נתונים?
+- [ ] הצפנה לנתונים רגישים?
+- [ ] GDPR compliance אם נדרש?
+- [ ] Cardcom בלבד לתשלומים?
+
+**תיעוד**
+- [ ] README מעודכן?
+- [ ] API endpoints מתועדים?
+- [ ] changelog מעודכן?
+
+**GATE DECISION**: ⬜ PASS / ⬜ REQUIRES JUSTIFICATION (document in Complexity Tracking)
 
 ## Project Structure
 

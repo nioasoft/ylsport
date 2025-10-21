@@ -1,0 +1,191 @@
+// YL Sport Tights - Database Schema
+// Generated: 2025-10-21
+// Database: PostgreSQL (Neon Serverless)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ADMIN USER
+// ============================================================================
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String   // Bcrypt hash with salt rounds = 12
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+// ============================================================================
+// ORDER
+// ============================================================================
+
+enum OrderStatus {
+  PENDING_PAYMENT  // Order created, awaiting Cardcom payment confirmation
+  PAID             // Payment confirmed, ready for processing
+  PROCESSING       // Admin is preparing the order for shipment
+  SHIPPED          // Order shipped, tracking number added
+  DELIVERED        // Order delivered to customer
+  CANCELLED        // Order cancelled (by customer or admin)
+
+  @@map("order_status")
+}
+
+enum PaymentStatus {
+  PENDING    // Waiting for payment
+  COMPLETED  // Payment successful
+  FAILED     // Payment failed at Cardcom
+  REFUNDED   // Payment refunded
+
+  @@map("payment_status")
+}
+
+enum ShippingMethod {
+  STANDARD_DELIVERY  // 30 ILS, delivery to address
+  SELF_PICKUP        // 0 ILS, pickup in Beer Sheva
+
+  @@map("shipping_method")
+}
+
+model Order {
+  id                 String         @id @default(cuid())
+  orderNumber        String         @unique // Sequential: "001", "002", etc.
+
+  // Customer Information (no user account, stored per order)
+  customerName       String
+  customerEmail      String
+  customerPhone      String
+
+  // Shipping Information
+  shippingAddress    String
+  shippingCity       String
+  shippingPostalCode String
+  shippingMethod     ShippingMethod
+
+  // Pricing
+  subtotal           Decimal        @db.Decimal(10, 2) // Product total before discount/shipping
+  shippingCost       Decimal        @db.Decimal(10, 2) // 30 ILS or 0 ILS
+  discountAmount     Decimal        @db.Decimal(10, 2) @default(0) // Amount deducted
+  total              Decimal        @db.Decimal(10, 2) // Final amount paid
+
+  // Order Status
+  status             OrderStatus    @default(PENDING_PAYMENT)
+  paymentStatus      PaymentStatus  @default(PENDING)
+  trackingNumber     String?        // Nullable until shipped
+
+  // Relationships
+  items              OrderItem[]
+  discountCode       DiscountCode?  @relation(fields: [discountCodeId], references: [id])
+  discountCodeId     String?
+
+  // Timestamps
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([orderNumber])
+  @@index([customerEmail])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+// ============================================================================
+// ORDER ITEM
+// ============================================================================
+
+enum ProductSize {
+  S    // Small
+  M    // Medium
+  L    // Large
+  XL   // Extra Large
+
+  @@map("product_size")
+}
+
+model OrderItem {
+  id           String      @id @default(cuid())
+
+  // Relationship
+  order        Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      String
+
+  // Product Information (denormalized for historical record)
+  productName  String      // "YL Sport Tights"
+  productSize  ProductSize
+  quantity     Int         @default(1) // 1-5 per order
+  pricePerUnit Decimal     @db.Decimal(10, 2) // 299 ILS at time of purchase
+  totalPrice   Decimal     @db.Decimal(10, 2) // pricePerUnit * quantity
+
+  // Timestamps
+  createdAt    DateTime    @default(now())
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ============================================================================
+// DISCOUNT CODE
+// ============================================================================
+
+enum DiscountType {
+  PERCENTAGE    // e.g., 20% off
+  FIXED_AMOUNT  // e.g., 50 ILS off
+
+  @@map("discount_type")
+}
+
+model DiscountCode {
+  id                String       @id @default(cuid())
+  code              String       @unique // e.g., "LAUNCH50", case-insensitive in validation
+  type              DiscountType
+  value             Decimal      @db.Decimal(10, 2) // 20 (for 20%) or 50 (for 50 ILS)
+
+  // Validity Period
+  validFrom         DateTime     @default(now())
+  validUntil        DateTime
+
+  // Usage Limits
+  usageLimit        Int?         // Nullable = unlimited usage
+  usageCount        Int          @default(0) // Incremented on each order
+
+  // Order Requirements
+  minimumOrderValue Decimal?     @db.Decimal(10, 2) // Nullable = no minimum
+
+  // Status
+  isActive          Boolean      @default(true)
+
+  // Relationships
+  orders            Order[]
+
+  // Timestamps
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+  @@map("discount_codes")
+}
+
+// ============================================================================
+// NEWSLETTER SUBSCRIBER
+// ============================================================================
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  ipAddress String?  // Optional for GDPR compliance
+  consent   Boolean  @default(true)
+
+  @@index([email])
+  @@map("newsletter_subscribers")
+}

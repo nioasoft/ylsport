@@ -1,0 +1,734 @@
+openapi: 3.0.3
+info:
+  title: YL Sport Tights - Orders API
+  description: |
+    API endpoints for managing customer orders in the YL Sport Tights e-commerce system.
+    Supports order creation, retrieval, status updates, and tracking number management.
+  version: 1.0.0
+  contact:
+    name: YL Sport Development Team
+    email: dev@yl-sport.com
+
+servers:
+  - url: https://yl-sport.vercel.app/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Local development server
+
+tags:
+  - name: Orders
+    description: Order management operations
+  - name: Admin
+    description: Admin-only order operations
+
+paths:
+  /orders:
+    post:
+      tags:
+        - Orders
+      summary: Create a new order
+      description: |
+        Creates a new order after customer completes checkout. This endpoint is called
+        when customer submits the checkout form, before redirecting to Cardcom payment.
+        Order is created with status PENDING_PAYMENT.
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            example:
+              customerName: שרה כהן
+              customerEmail: sarah@example.com
+              customerPhone: "0501234567"
+              shippingAddress: רחוב הרצל 25
+              shippingCity: תל אביב
+              shippingPostalCode: "6522301"
+              shippingMethod: STANDARD_DELIVERY
+              items:
+                - productSize: M
+                  quantity: 1
+              discountCode: LAUNCH50
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: clxyz123abc
+                orderNumber: "001"
+                customerName: שרה כהן
+                customerEmail: sarah@example.com
+                customerPhone: "0501234567"
+                shippingAddress: רחוב הרצל 25
+                shippingCity: תל אביב
+                shippingPostalCode: "6522301"
+                shippingMethod: STANDARD_DELIVERY
+                subtotal: 299.00
+                shippingCost: 30.00
+                discountAmount: 50.00
+                total: 279.00
+                status: PENDING_PAYMENT
+                paymentStatus: PENDING
+                trackingNumber: null
+                items:
+                  - id: item123
+                    productName: YL Sport Tights
+                    productSize: M
+                    quantity: 1
+                    pricePerUnit: 299.00
+                    totalPrice: 299.00
+                discountCode:
+                  code: LAUNCH50
+                  type: FIXED_AMOUNT
+                  value: 50.00
+                createdAt: "2025-10-21T10:30:00Z"
+                updatedAt: "2025-10-21T10:30:00Z"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidEmail:
+                  value:
+                    error: כתובת אימייל לא תקינה
+                    field: customerEmail
+                invalidPhone:
+                  value:
+                    error: מספר טלפון לא תקין
+                    field: customerPhone
+                invalidPostalCode:
+                  value:
+                    error: מיקוד חייב להיות 7 ספרות
+                    field: shippingPostalCode
+        '422':
+          description: Business logic validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidDiscountCode:
+                  value:
+                    error: קוד הנחה לא תקף או פג תוקף
+                    field: discountCode
+                discountMinimumNotMet:
+                  value:
+                    error: סכום הזמנה מינימלי לקוד זה הוא 200 ₪
+                    field: discountCode
+
+    get:
+      tags:
+        - Admin
+      summary: List all orders
+      description: |
+        Retrieve a paginated list of all orders. Supports filtering by status,
+        sorting by creation date, and searching by customer email or order number.
+        **Requires admin authentication.**
+      operationId: listOrders
+      security:
+        - AdminSession: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter orders by status
+          required: false
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: search
+          in: query
+          description: Search by order number or customer email
+          required: false
+          schema:
+            type: string
+            example: "001"
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sortBy
+          in: query
+          description: Sort field
+          required: false
+          schema:
+            type: string
+            enum: [createdAt, orderNumber, total]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          description: Sort direction
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrderSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+              example:
+                data:
+                  - id: clxyz123abc
+                    orderNumber: "003"
+                    customerName: שרה כהן
+                    customerEmail: sarah@example.com
+                    total: 279.00
+                    status: PAID
+                    paymentStatus: COMPLETED
+                    createdAt: "2025-10-21T10:30:00Z"
+                  - id: clxyz456def
+                    orderNumber: "002"
+                    customerName: רחל לוי
+                    customerEmail: rachel@example.com
+                    total: 329.00
+                    status: SHIPPED
+                    paymentStatus: COMPLETED
+                    createdAt: "2025-10-20T14:15:00Z"
+                pagination:
+                  page: 1
+                  limit: 20
+                  total: 45
+                  totalPages: 3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /orders/{orderNumber}:
+    get:
+      tags:
+        - Orders
+        - Admin
+      summary: Get order details
+      description: |
+        Retrieve complete details for a specific order by order number.
+        Public endpoint (no auth required) - customers can access their order
+        confirmation page with the order number from their email.
+      operationId: getOrder
+      parameters:
+        - name: orderNumber
+          in: path
+          description: Order number (e.g., "001", "002")
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{3,}$'
+            example: "001"
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: הזמנה לא נמצאה
+                orderNumber: "999"
+
+  /orders/{id}/status:
+    patch:
+      tags:
+        - Admin
+      summary: Update order status
+      description: |
+        Update the order status and optionally add a tracking number.
+        When status is changed to SHIPPED and tracking number is provided,
+        automatic email and SMS notifications are sent to the customer.
+        **Requires admin authentication.**
+      operationId: updateOrderStatus
+      security:
+        - AdminSession: []
+      parameters:
+        - name: id
+          in: path
+          description: Order ID (internal CUID)
+          required: true
+          schema:
+            type: string
+            example: clxyz123abc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  $ref: '#/components/schemas/OrderStatus'
+                trackingNumber:
+                  type: string
+                  description: Shipping carrier tracking number (required when status = SHIPPED)
+                  example: "IL123456789"
+            examples:
+              markAsShipped:
+                value:
+                  status: SHIPPED
+                  trackingNumber: IL123456789
+              markAsProcessing:
+                value:
+                  status: PROCESSING
+      responses:
+        '200':
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid status transition or missing tracking number
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidTransition:
+                  value:
+                    error: מעבר סטטוס לא חוקי מ-DELIVERED ל-PROCESSING
+                    currentStatus: DELIVERED
+                    requestedStatus: PROCESSING
+                missingTrackingNumber:
+                  value:
+                    error: מספר מעקב נדרש כאשר הסטטוס הוא SHIPPED
+                    status: SHIPPED
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /orders/{id}/tracking:
+    patch:
+      tags:
+        - Admin
+      summary: Add or update tracking number
+      description: |
+        Add or update the tracking number for an existing order.
+        If order status is SHIPPED and tracking number is added/updated,
+        sends notification email and SMS to customer.
+        **Requires admin authentication.**
+      operationId: updateTrackingNumber
+      security:
+        - AdminSession: []
+      parameters:
+        - name: id
+          in: path
+          description: Order ID (internal CUID)
+          required: true
+          schema:
+            type: string
+            example: clxyz123abc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - trackingNumber
+              properties:
+                trackingNumber:
+                  type: string
+                  description: Shipping carrier tracking number
+                  example: IL123456789
+      responses:
+        '200':
+          description: Tracking number updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Order not found
+
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      required:
+        - customerName
+        - customerEmail
+        - customerPhone
+        - shippingAddress
+        - shippingCity
+        - shippingPostalCode
+        - shippingMethod
+        - items
+      properties:
+        customerName:
+          type: string
+          description: Customer full name (Hebrew or English)
+          minLength: 2
+          maxLength: 100
+          example: שרה כהן
+        customerEmail:
+          type: string
+          format: email
+          description: Customer email address
+          example: sarah@example.com
+        customerPhone:
+          type: string
+          description: Israeli phone number (10 digits with or without dashes)
+          pattern: '^05\d{8}$|^0[2-9]\d{7,8}$'
+          example: "0501234567"
+        shippingAddress:
+          type: string
+          description: Street address
+          minLength: 5
+          maxLength: 200
+          example: רחוב הרצל 25
+        shippingCity:
+          type: string
+          description: City name
+          minLength: 2
+          maxLength: 50
+          example: תל אביב
+        shippingPostalCode:
+          type: string
+          description: Israeli postal code (7 digits)
+          pattern: '^\d{7}$'
+          example: "6522301"
+        shippingMethod:
+          $ref: '#/components/schemas/ShippingMethod'
+        items:
+          type: array
+          description: Order items (currently always 1 item for single-product site)
+          minItems: 1
+          maxItems: 1
+          items:
+            type: object
+            required:
+              - productSize
+              - quantity
+            properties:
+              productSize:
+                $ref: '#/components/schemas/ProductSize'
+              quantity:
+                type: integer
+                minimum: 1
+                maximum: 5
+                default: 1
+                example: 1
+        discountCode:
+          type: string
+          description: Optional discount code (case-insensitive)
+          minLength: 3
+          maxLength: 20
+          example: LAUNCH50
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Internal order ID (CUID)
+          example: clxyz123abc
+        orderNumber:
+          type: string
+          description: Customer-facing order number
+          example: "001"
+        customerName:
+          type: string
+          example: שרה כהן
+        customerEmail:
+          type: string
+          format: email
+          example: sarah@example.com
+        customerPhone:
+          type: string
+          example: "0501234567"
+        shippingAddress:
+          type: string
+          example: רחוב הרצל 25
+        shippingCity:
+          type: string
+          example: תל אביב
+        shippingPostalCode:
+          type: string
+          example: "6522301"
+        shippingMethod:
+          $ref: '#/components/schemas/ShippingMethod'
+        subtotal:
+          type: number
+          format: decimal
+          description: Product total before discounts and shipping
+          example: 299.00
+        shippingCost:
+          type: number
+          format: decimal
+          description: Shipping cost (30 ILS for delivery, 0 for pickup)
+          example: 30.00
+        discountAmount:
+          type: number
+          format: decimal
+          description: Discount amount applied
+          example: 50.00
+        total:
+          type: number
+          format: decimal
+          description: Final total (subtotal - discount + shipping)
+          example: 279.00
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
+        trackingNumber:
+          type: string
+          nullable: true
+          description: Shipping carrier tracking number
+          example: IL123456789
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        discountCode:
+          allOf:
+            - $ref: '#/components/schemas/DiscountCodeSummary'
+            - nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-10-21T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-10-21T10:30:00Z"
+
+    OrderSummary:
+      type: object
+      description: Lightweight order object for list views
+      properties:
+        id:
+          type: string
+          example: clxyz123abc
+        orderNumber:
+          type: string
+          example: "001"
+        customerName:
+          type: string
+          example: שרה כהן
+        customerEmail:
+          type: string
+          example: sarah@example.com
+        total:
+          type: number
+          format: decimal
+          example: 279.00
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-10-21T10:30:00Z"
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: item123
+        productName:
+          type: string
+          example: YL Sport Tights
+        productSize:
+          $ref: '#/components/schemas/ProductSize'
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 1
+        pricePerUnit:
+          type: number
+          format: decimal
+          example: 299.00
+        totalPrice:
+          type: number
+          format: decimal
+          example: 299.00
+
+    DiscountCodeSummary:
+      type: object
+      description: Discount code info included in order response
+      properties:
+        code:
+          type: string
+          example: LAUNCH50
+        type:
+          $ref: '#/components/schemas/DiscountType'
+        value:
+          type: number
+          format: decimal
+          example: 50.00
+
+    OrderStatus:
+      type: string
+      enum:
+        - PENDING_PAYMENT
+        - PAID
+        - PROCESSING
+        - SHIPPED
+        - DELIVERED
+        - CANCELLED
+      description: |
+        Order fulfillment status:
+        - PENDING_PAYMENT: Order created, awaiting payment confirmation
+        - PAID: Payment confirmed, ready for processing
+        - PROCESSING: Admin is preparing shipment
+        - SHIPPED: Package shipped with tracking number
+        - DELIVERED: Package delivered to customer
+        - CANCELLED: Order cancelled
+
+    PaymentStatus:
+      type: string
+      enum:
+        - PENDING
+        - COMPLETED
+        - FAILED
+        - REFUNDED
+      description: |
+        Payment processing status:
+        - PENDING: Waiting for Cardcom payment
+        - COMPLETED: Payment successful
+        - FAILED: Payment declined or error
+        - REFUNDED: Payment refunded to customer
+
+    ShippingMethod:
+      type: string
+      enum:
+        - STANDARD_DELIVERY
+        - SELF_PICKUP
+      description: |
+        Shipping method:
+        - STANDARD_DELIVERY: 30 ILS delivery to address
+        - SELF_PICKUP: Free pickup in Beer Sheva
+
+    ProductSize:
+      type: string
+      enum:
+        - S
+        - M
+        - L
+        - XL
+      description: Product size (Small, Medium, Large, Extra Large)
+
+    DiscountType:
+      type: string
+      enum:
+        - PERCENTAGE
+        - FIXED_AMOUNT
+      description: |
+        Discount type:
+        - PERCENTAGE: Discount as percentage (e.g., 20%)
+        - FIXED_AMOUNT: Fixed amount off (e.g., 50 ILS)
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 20
+        total:
+          type: integer
+          description: Total number of items
+          example: 45
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 3
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message in Hebrew
+          example: כתובת אימייל לא תקינה
+        field:
+          type: string
+          description: Field name that caused the error (if applicable)
+          example: customerEmail
+        code:
+          type: string
+          description: Machine-readable error code
+          example: INVALID_EMAIL
+
+  securitySchemes:
+    AdminSession:
+      type: apiKey
+      in: cookie
+      name: admin_session
+      description: Admin session cookie (set after login)
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: נדרשת התחברות
+            code: UNAUTHORIZED
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: אין לך הרשאה לבצע פעולה זו
+            code: FORBIDDEN
