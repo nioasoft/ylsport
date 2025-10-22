@@ -16,9 +16,9 @@ export function MobileStickyBar() {
   const [isProductVisible, setIsProductVisible] = useState(false);
 
   useEffect(() => {
-    // Scroll detection - show after scrolling 50% of viewport
+    // Scroll detection - show after scrolling 20% of viewport
     const handleScroll = () => {
-      const scrolledEnough = window.scrollY > window.innerHeight * 0.5;
+      const scrolledEnough = window.scrollY > window.innerHeight * 0.2;
       setIsVisible(scrolledEnough && !isProductVisible);
     };
 
@@ -33,13 +33,13 @@ export function MobileStickyBar() {
           if (entry.isIntersecting) {
             setIsVisible(false);
           } else {
-            const scrolledEnough = window.scrollY > window.innerHeight * 0.5;
+            const scrolledEnough = window.scrollY > window.innerHeight * 0.2;
             setIsVisible(scrolledEnough);
           }
         },
         {
-          threshold: 0.1, // Trigger when 10% of product section is visible
-          rootMargin: "0px 0px -100px 0px" // Add some margin at bottom
+          threshold: 0.3, // Trigger when 30% of product section is visible
+          rootMargin: "0px" // No extra margin
         }
       );
 
@@ -81,7 +81,7 @@ export function MobileStickyBar() {
           className="w-full text-lg py-6 font-bold shadow-lg"
           onClick={scrollToProduct}
         >
-          🛒 קנה עכשיו ₪299
+          קנה עכשיו
         </Button>
         <p className="text-xs text-center text-gray-500 mt-2">
           משלוח מהיר | החזרה חינם
