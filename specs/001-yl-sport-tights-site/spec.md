@@ -220,7 +220,7 @@ Visitors can access clear information about privacy policy, terms of service, sh
 
 **Design & UX**:
 - **FR-050**: System MUST implement RTL (right-to-left) layout throughout entire site for Hebrew language support
-- **FR-051**: System MUST use primary brand color #F7D2D9 (pink/rose) and tones for CTAs, accents, and visual elements
+- **FR-051**: System MUST use brand color palette: Primary #00BFA6 (Teal), Accent #FF6B6B (Coral), Secondary #E0F7F4 (Teal Light) for CTAs, accents, and visual elements
 - **FR-052**: System MUST display prominent sticky "הוסף לעגלה" (Add to Cart) button visible at all times during scrolling
 - **FR-053**: System MUST provide immediate visual feedback (<100ms) for all user interactions: button clicks, form submissions, status changes
 - **FR-054**: System MUST be fully responsive with mobile-first design supporting viewport widths from 320px to 2560px

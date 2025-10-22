@@ -5,6 +5,7 @@ import { Hero } from "@/components/home/Hero";
 import { ProductShowcase } from "@/components/home/ProductShowcase";
 import { SizeGuide } from "@/components/home/SizeGuide";
 import { Testimonials } from "@/components/home/Testimonials";
+import { MobileStickyBar } from "@/components/home/MobileStickyBar";
 
 export default function HomePage() {
   return (
@@ -21,6 +22,9 @@ export default function HomePage() {
 
       {/* Social Proof */}
       <Testimonials />
+
+      {/* Mobile Sticky CTA */}
+      <MobileStickyBar />
     </div>
   );
 }

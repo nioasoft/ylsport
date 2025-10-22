@@ -31,7 +31,7 @@
 - [ ] T010 [P] Initialize git repository and create .gitignore (exclude .env.local, node_modules, .next)
 - [ ] T011 [P] Create root layout with Hebrew RTL support in app/layout.tsx
 - [ ] T012 [P] Configure global styles with TailwindCSS and RTL overrides in app/globals.css
-- [ ] T013 [P] Add brand colors (#F7D2D9 pink) to TailwindCSS config
+- [ ] T013 [P] Add brand colors (Primary: #00BFA6 Teal, Accent: #FF6B6B Coral, Secondary: #E0F7F4) to TailwindCSS config
 
 ---
 

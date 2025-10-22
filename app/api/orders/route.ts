@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCardcomSDK, generatePaymentDescription } from "@/lib/cardcom";
 import { createOrderSchema } from "@/lib/validation";
 import { generateOrderNumber } from "@/lib/utils";
+import { getAdminSession } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -122,45 +123,136 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const orderNumber = searchParams.get("orderNumber");
 
-    if (!orderNumber) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "מספר הזמנה חסר",
+    // Customer lookup - get single order by orderNumber
+    if (orderNumber) {
+      const order = await prisma.order.findUnique({
+        where: { orderNumber },
+        include: {
+          items: true,
+          discountCode: true,
         },
-        { status: 400 }
+      });
+
+      if (!order) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "הזמנה לא נמצאה",
+          },
+          { status: 404 }
+        );
+      }
+
+      // Return order details (excluding sensitive info for customer)
+      return NextResponse.json({
+        success: true,
+        order: {
+          orderNumber: order.orderNumber,
+          status: order.status,
+          paymentStatus: order.paymentStatus,
+          total: order.total.toNumber(),
+          items: order.items,
+          createdAt: order.createdAt,
+        },
+      });
+    }
+
+    // Admin list view - requires authentication
+    const session = await getAdminSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
-    // Get order details
-    const order = await prisma.order.findUnique({
-      where: { orderNumber },
+    // Get filter parameters
+    const status = searchParams.get("status");
+    const search = searchParams.get("search");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const dateFrom = searchParams.get("dateFrom");
+    const dateTo = searchParams.get("dateTo");
+
+    // Build where clause
+    const where: any = {};
+
+    if (status && status !== "ALL") {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { orderNumber: { contains: search } },
+        { customerName: { contains: search } },
+        { customerEmail: { contains: search } },
+        { customerPhone: { contains: search } },
+      ];
+    }
+
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) {
+        where.createdAt.gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        where.createdAt.lte = new Date(dateTo);
+      }
+    }
+
+    // Get total count for pagination
+    const total = await prisma.order.count({ where });
+
+    // Get orders with pagination
+    const orders = await prisma.order.findMany({
+      where,
       include: {
         items: true,
         discountCode: true,
       },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
-    if (!order) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "הזמנה לא נמצאה",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Return order details (excluding sensitive info)
+    // Return admin view with full details
     return NextResponse.json({
       success: true,
-      order: {
+      orders: orders.map((order) => ({
+        id: order.id,
         orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        customerEmail: order.customerEmail,
+        customerPhone: order.customerPhone,
+        shippingAddress: order.shippingAddress,
+        shippingCity: order.shippingCity,
+        shippingPostalCode: order.shippingPostalCode,
+        shippingMethod: order.shippingMethod,
         status: order.status,
         paymentStatus: order.paymentStatus,
+        trackingNumber: order.trackingNumber,
+        subtotal: order.subtotal.toNumber(),
+        shippingCost: order.shippingCost.toNumber(),
+        discountAmount: order.discountAmount.toNumber(),
         total: order.total.toNumber(),
-        items: order.items,
+        items: order.items.map((item) => ({
+          productName: item.productName,
+          productSize: item.productSize,
+          quantity: item.quantity,
+          pricePerUnit: item.pricePerUnit.toNumber(),
+          totalPrice: item.totalPrice.toNumber(),
+        })),
+        discountCode: order.discountCode?.code,
         createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {

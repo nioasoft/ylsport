@@ -66,8 +66,8 @@ This section verifies compliance with the YL Sport Tights Constitution (.specify
 - [x] תלויות מינימליות (shadcn/ui מועדף)? **YES** - shadcn/ui copy-paste components, minimal external deps
 
 **חוקי עיצוב**
-- [x] צבעים עומדים בפלטה (#F7D2D9 וגווניו)? **YES** - FR-051 specifies #F7D2D9 primary brand color
-- [x] פונט עברי ברור (Assistant/Rubik)? **YES** - Spec mentions Assistant or Rubik for Hebrew
+- [x] צבעים עומדים בפלטה (Primary: #00BFA6, Accent: #FF6B6B, Secondary: #E0F7F4)? **YES** - FR-051 specifies brand color palette (Teal & Coral)
+- [x] פונט עברי ברור (Assistant)? **YES** - Spec mentions Assistant for Hebrew, implemented in layout.tsx
 - [x] RTL מלא? **YES** - FR-050 requires full RTL throughout site
 - [x] אלמנטים נגישים (contrast ratio, sizes)? **YES** - FR-048 ARIA labels, alt tags, semantic HTML
 

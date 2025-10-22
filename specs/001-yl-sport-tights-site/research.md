@@ -424,7 +424,7 @@ Use **shadcn/ui** components with **TailwindCSS** for styling.
 - **RTL support**: `tailwindcss-rtl` plugin handles directional styles automatically
 - **Performance**: PurgeCSS removes unused styles, resulting in tiny CSS bundles (<10KB)
 - **Responsive design**: Built-in breakpoints (`sm:`, `md:`, `lg:`) for mobile-first development
-- **Brand colors**: Easy to define custom palette (`#F7D2D9` pink) in `tailwind.config.ts`
+- **Brand colors**: Easy to define custom palette (Primary: `#00BFA6` Teal, Accent: `#FF6B6B` Coral) in `tailwind.config.ts`
 
 **Component Quality**:
 - **Consistent design**: All components follow same design system (spacing, typography, colors)

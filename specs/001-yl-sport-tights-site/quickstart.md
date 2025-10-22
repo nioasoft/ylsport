@@ -694,7 +694,7 @@ After setup is complete:
 
 2. **Configure Brand Colors**:
    - Edit `tailwind.config.ts` to use exact brand colors
-   - Update `#F7D2D9` pink shades if needed
+   - Update Teal (#00BFA6), Coral (#FF6B6B), and Secondary (#E0F7F4) shades if needed
 
 3. **Test RTL Layout**:
    - Verify all components render correctly in Hebrew RTL

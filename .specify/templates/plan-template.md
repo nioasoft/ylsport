@@ -72,10 +72,10 @@ This section verifies compliance with the YL Sport Tights Constitution (.specify
 - [ ] תלויות מינימליות (shadcn/ui מועדף)?
 
 **חוקי עיצוב**
-- [ ] צבעים עומדים בפלטה (#F7D2D9 וגווניו)?
-- [ ] פונט עברי ברור (Assistant/Rubik)?
+- [ ] צבעים עומדים בפלטה (Primary: #00BFA6, Accent: #FF6B6B, Secondary: #E0F7F4)?
+- [ ] פונט עברי ברור (Assistant)?
 - [ ] RTL מלא?
-- [ ] אלמנטים נגישים (contrast ratio, sizes)?
+- [ ] אלמנטים נגישים (contrast ratio > 4.5:1, sizes)?
 
 **אבטחה ופרטיות**
 - [ ] אחסון מינימלי של נתונים?
