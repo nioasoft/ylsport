@@ -63,7 +63,7 @@ export function ProductShowcase() {
   const [selectedImage, setSelectedImage] = useState(0);
 
   return (
-    <section id="product" className="bg-white py-12">
+    <section id="product" className="bg-white py-12 scroll-mt-16">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold md:text-4xl">
