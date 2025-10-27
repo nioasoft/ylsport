@@ -10,9 +10,9 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#00BFA6", // Teal - אנרגטי וספורטיבי
-          light: "#E0F7F4",   // Teal בהיר
-          dark: "#00897B",    // Teal כהה
+          DEFAULT: "#f7d2d9", // Pink - ורוד פסטל רך ונשי
+          light: "#fef0f2",   // Pink בהיר מאוד
+          dark: "#e5b5be",    // Pink כהה יותר
         },
         accent: {
           DEFAULT: "#FF6B6B", // Coral - חם ואנרגטי
@@ -20,9 +20,9 @@ const config: Config = {
           dark: "#E55555",    // Coral כהה
         },
         secondary: {
-          DEFAULT: "#E0F7F4", // Teal Light - לקופסאות (הוחלף מצבע ורוד)
-          light: "#F0FBFA",   // Teal בהיר מאוד
-          dark: "#B8EDE7",    // Teal בינוני
+          DEFAULT: "#fef0f2", // Pink Light - לקופסאות ורקעים
+          light: "#fff8f9",   // Pink בהיר מאוד
+          dark: "#f7d2d9",    // Pink בינוני
         },
         background: "var(--background)",
         foreground: "var(--foreground)",
