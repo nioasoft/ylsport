@@ -278,14 +278,14 @@ function OrderConfirmationContent() {
           <p className="mt-8 text-center text-sm text-gray-600">
             שאלות? צור קשר ב-
             <a
-              href="mailto:info@yl-sport.co.il"
+              href="mailto:ylsport1@gmail.com"
               className="text-primary hover:underline"
             >
-              info@yl-sport.co.il
+              ylsport1@gmail.com
             </a>{" "}
             או{" "}
-            <a href="tel:0501234567" className="text-primary hover:underline">
-              050-123-4567
+            <a href="tel:0539197848" className="text-primary hover:underline">
+              053-9197848
             </a>
           </p>
         </div>

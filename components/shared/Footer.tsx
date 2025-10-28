@@ -86,13 +86,13 @@ export function Footer() {
             <h4 className="mb-4 font-semibold">צור קשר</h4>
             <ul className="space-y-2 text-sm text-gray-600">
               <li>
-                <a href="mailto:info@yl-sport.co.il" className="hover:text-primary">
-                  info@yl-sport.co.il
+                <a href="mailto:ylsport1@gmail.com" className="hover:text-primary">
+                  ylsport1@gmail.com
                 </a>
               </li>
               <li>
-                <a href="tel:+972501234567" className="hover:text-primary">
-                  050-123-4567
+                <a href="tel:+972539197848" className="hover:text-primary">
+                  053-9197848
                 </a>
               </li>
               <li>באר שבע, ישראל</li>
