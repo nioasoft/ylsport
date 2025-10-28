@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/shared/Header";
 import { Footer } from "@/components/shared/Footer";
 import { Toaster } from "@/components/ui/toaster";
+import { CookieBanner } from "@/components/shared/CookieBanner";
 
 const assistant = Assistant({
   subsets: ["latin", "hebrew"],
@@ -36,6 +37,7 @@ export default function RootLayout({
         <main>{children}</main>
         <Footer />
         <Toaster />
+        <CookieBanner />
       </body>
     </html>
   );

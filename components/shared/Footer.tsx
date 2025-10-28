@@ -78,6 +78,11 @@ export function Footer() {
                   שאלות נפוצות
                 </Link>
               </li>
+              <li>
+                <Link href="/accessibility" className="text-gray-600 hover:text-primary">
+                  הצהרת נגישות
+                </Link>
+              </li>
             </ul>
           </div>
 
