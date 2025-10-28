@@ -51,11 +51,10 @@ const features = [
 ];
 
 const specifications = [
-  { label: "חומר", value: "88% פוליאסטר, 12% ספנדקס" },
+  { label: "חומר", value: "75% פוליאסטר, 25% ספנדקס" },
   { label: "משקל", value: "220 גרם" },
   { label: "גזרה", value: "High-Waist" },
   { label: "תפרים", value: "Flatlock (ללא חיכוך)" },
-  { label: "כיסים", value: "כיס נסתר בחלק האחורי" },
   { label: "טיפול", value: "ניתן לכביסה במכונה 30°C" },
 ];
 

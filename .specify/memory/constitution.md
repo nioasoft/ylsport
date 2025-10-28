@@ -170,10 +170,10 @@ UX מושלם אינו מקרי - הוא תוצר של תכנון מדוקדק �
 ### צבעים (Colors)
 
 **פלטת צבעים מחייבת**:
-- **צבע ראשי (Primary)**: `#f7d2d9` (Pink - ורוד פסטל רך ונשי)
-  - Light: `#fef0f2` | Dark: `#e5b5be`
-- **צבע משני (Secondary)**: `#fef0f2` (Pink Light - לקופסאות ורקעים)
-  - Light: `#fff8f9` | Dark: `#f7d2d9`
+- **צבע ראשי (Primary)**: `#e87f93` (Pink - ורוד עז ואנרגטי)
+  - Light: `#fce4e9` | Dark: `#d5617a`
+- **צבע משני (Secondary)**: `#fce4e9` (Pink Light - לקופסאות ורקעים)
+  - Light: `#fef3f6` | Dark: `#e87f93`
 - **אקסנט (Accent)**: `#FF6B6B` (Coral - חם ואנרגטי לכפתורי CTA)
   - Light: `#FFE5E5` | Dark: `#E55555`
 - **טקסט**: שחור `#000000` / אפור כהה `#1a1a1a`

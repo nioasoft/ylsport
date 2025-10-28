@@ -10,9 +10,9 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#f7d2d9", // Pink - ורוד פסטל רך ונשי
-          light: "#fef0f2",   // Pink בהיר מאוד
-          dark: "#e5b5be",    // Pink כהה יותר
+          DEFAULT: "#e87f93", // Pink - ורוד עז ואנרגטי
+          light: "#fce4e9",   // Pink בהיר מאוד
+          dark: "#d5617a",    // Pink כהה יותר
         },
         accent: {
           DEFAULT: "#FF6B6B", // Coral - חם ואנרגטי
@@ -20,9 +20,9 @@ const config: Config = {
           dark: "#E55555",    // Coral כהה
         },
         secondary: {
-          DEFAULT: "#fef0f2", // Pink Light - לקופסאות ורקעים
-          light: "#fff8f9",   // Pink בהיר מאוד
-          dark: "#f7d2d9",    // Pink בינוני
+          DEFAULT: "#fce4e9", // Pink Light - לקופסאות ורקעים
+          light: "#fef3f6",   // Pink בהיר מאוד
+          dark: "#e87f93",    // Pink בינוני
         },
         background: "var(--background)",
         foreground: "var(--foreground)",
