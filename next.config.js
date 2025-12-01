@@ -10,11 +10,6 @@ const nextConfig = {
   reactStrictMode: true,
   // Performance optimizations
   swcMinify: true,
-  // RTL support
-  i18n: {
-    locales: ['he'],
-    defaultLocale: 'he',
-  },
 }
 
 module.exports = nextConfig
