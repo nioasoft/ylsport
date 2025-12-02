@@ -66,9 +66,9 @@ export async function sendShippingNotification(
     );
   }
 
-  // Send SMS notification (DEMO mode)
+  // Send SMS notification
   try {
-    const smsResult = sendShippingSMS({
+    const smsResult = await sendShippingSMS({
       phone: order.customerPhone,
       orderNumber: order.orderNumber,
       trackingNumber: order.trackingNumber,
@@ -78,7 +78,7 @@ export async function sendShippingNotification(
     if (smsResult.success) {
       results.smsSent = true;
       console.log(
-        `✅ Shipping SMS sent (DEMO) to ${order.customerPhone} for order ${order.orderNumber}`
+        `✅ Shipping SMS sent to ${order.customerPhone} for order ${order.orderNumber}`
       );
     } else {
       results.errors.push(`SMS failed: ${smsResult.error}`);

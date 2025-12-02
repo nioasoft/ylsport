@@ -244,3 +244,28 @@ export const cardcomCallbackSchema = z.object({
 });
 
 export type CardcomCallbackData = z.infer<typeof cardcomCallbackSchema>;
+
+// ============================================================================
+// TRANZILA PAYMENT VALIDATION
+// ============================================================================
+
+export const tranzilaCallbackSchema = z.object({
+  // Tranzila callback parameters
+  Response: z.string(), // "000" = success, other codes = failure
+  ConfirmationCode: z.string().optional(), // Transaction confirmation code
+  order_id: z.string(), // Our order number (sent as order_id)
+  sum: z.coerce.number(), // Payment amount
+  currency: z.string().optional().default("1"), // Currency code (1 = ILS)
+  index: z.string().optional(), // Tranzila transaction index
+  // Additional fields that may be returned
+  card: z.string().optional(), // Last 4 digits of card
+  expmonth: z.string().optional(),
+  expyear: z.string().optional(),
+  cardtype: z.string().optional(),
+  cardissuer: z.string().optional(),
+  cardaquirer: z.string().optional(),
+  Rone: z.string().optional(), // Hebrew response message
+  // Allow additional unknown fields
+}).passthrough();
+
+export type TranzilaCallbackData = z.infer<typeof tranzilaCallbackSchema>;

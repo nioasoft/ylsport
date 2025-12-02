@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCardcomSDK, generatePaymentDescription } from "@/lib/cardcom";
+import { getTranzilaSDK } from "@/lib/tranzila";
 import { createOrderSchema } from "@/lib/validation";
 import { generateOrderNumber } from "@/lib/utils";
 import { getAdminSession } from "@/lib/auth";
@@ -72,35 +72,32 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create Cardcom payment
-    const cardcom = getCardcomSDK();
+    // Create Tranzila payment
+    const tranzila = getTranzilaSDK();
 
-    const paymentRequest = {
-      terminalNumber: process.env.CARDCOM_TERMINAL_NUMBER || "",
-      returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/order/confirmation?orderNumber=${orderNumber}`,
-      notifyUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/callback`,
-      sum: order.total.toNumber(),
-      currency: "ILS",
-      orderNumber: order.orderNumber,
-      productName: "YL Sport Tights",
-      quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
-      description: generatePaymentDescription(
-        "YL Sport Tights",
-        order.items.reduce((sum, item) => sum + item.quantity, 0),
-        order.items.map((item) => item.productSize)
-      ),
-      email: order.customerEmail,
-      language: "he",
-    };
+    const paymentResponse = await tranzila.createPayment({
+      amount: order.total.toNumber(),
+      currency_code: "ILS", // Or "NIS" depending on API requirement
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/order/confirmation?orderNumber=${orderNumber}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout?error=payment_cancelled`,
+      notify_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/tranzila-callback`,
+      transaction_id: order.orderNumber, // Use our order number as reference
+      customer_name: order.customerName,
+      customer_email: order.customerEmail,
+      customer_phone: order.customerPhone,
+      product_name: "YL Sport Tights",
+    });
 
-    const paymentResponse = await cardcom.createPayment(paymentRequest);
+    if (!paymentResponse.success || !paymentResponse.payment_url) {
+      throw new Error(paymentResponse.error || "Failed to generate payment link");
+    }
 
     // Return payment URL to client
     return NextResponse.json({
       success: true,
       orderNumber: order.orderNumber,
-      paymentUrl: paymentResponse.url,
-      transactionId: paymentResponse.lowProfileCode,
+      paymentUrl: paymentResponse.payment_url,
+      transactionId: paymentResponse.transaction_id,
     });
   } catch (error) {
     console.error("Order creation error:", error);

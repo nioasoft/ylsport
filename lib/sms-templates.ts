@@ -1,9 +1,11 @@
 /**
- * SMS Templates
+ * SMS Templates and Sending Functions
  *
- * DEMO MODE: Currently logs SMS to console
- * Replace with actual SMS provider (e.g., Twilio, Vonage) when API is received
+ * Uses SendMsg API for sending SMS messages to Israeli mobile numbers
+ * Templates are in Hebrew for YL Sport customers
  */
+
+import { sendSMS, isValidPhoneForSMS, getSMSErrorMessage } from "./sendmsg";
 
 // ============================================================================
 // TYPES
@@ -30,17 +32,16 @@ export interface OrderConfirmationSMSData {
 }
 
 // ============================================================================
-// SMS SENDING (DEMO MODE)
+// SMS SENDING FUNCTIONS
 // ============================================================================
 
 /**
  * Send shipping notification SMS
- * DEMO MODE: Logs to console, returns mock success
  */
-export function sendShippingSMS(data: ShippingSMSData): SMSResult {
+export async function sendShippingSMS(data: ShippingSMSData): Promise<SMSResult> {
   try {
     // Validate phone number
-    if (!data.phone || !isValidPhoneNumber(data.phone)) {
+    if (!data.phone || !isValidPhoneForSMS(data.phone)) {
       return {
         success: false,
         error: "Invalid phone number",
@@ -50,21 +51,70 @@ export function sendShippingSMS(data: ShippingSMSData): SMSResult {
     // Generate SMS message in Hebrew
     const message = generateShippingSMSMessage(data);
 
-    // DEMO MODE: Log to console instead of sending
-    console.log("\n" + "=".repeat(60));
-    console.log("📱 SMS DEMO MODE - Shipping Notification");
-    console.log("=".repeat(60));
-    console.log(`To: ${data.phone}`);
-    console.log(`Order: ${data.orderNumber}`);
-    console.log(`Tracking: ${data.trackingNumber}`);
-    console.log("-".repeat(60));
-    console.log(`Message:\n${message}`);
-    console.log("=".repeat(60) + "\n");
+    // Send via SendMsg API
+    const result = await sendSMS({
+      to: data.phone,
+      message,
+    });
 
-    // Return mock success
+    if (result.success) {
+      console.log(`Shipping SMS sent to ${data.phone} for order ${data.orderNumber}`);
+      return {
+        success: true,
+        messageId: result.messageId,
+      };
+    }
+
+    console.error(`Failed to send shipping SMS: ${result.error}`);
+    return {
+      success: false,
+      error: result.error ? getSMSErrorMessage(result.errorCode || "API_ERROR") : "Failed to send SMS",
+    };
+  } catch (error) {
+    console.error("SMS sending error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown SMS error",
+    };
+  }
+}
+
+/**
+ * Send order confirmation SMS
+ */
+export function sendOrderConfirmationSMS(data: OrderConfirmationSMSData): SMSResult {
+  try {
+    // Validate phone number
+    if (!data.phone || !isValidPhoneForSMS(data.phone)) {
+      return {
+        success: false,
+        error: "Invalid phone number",
+      };
+    }
+
+    // Generate SMS message in Hebrew
+    const message = generateOrderConfirmationSMSMessage(data);
+
+    // Send via SendMsg API (async, but we return immediately for non-blocking)
+    sendSMS({
+      to: data.phone,
+      message,
+    })
+      .then((result) => {
+        if (result.success) {
+          console.log(`Order confirmation SMS sent to ${data.phone} for order ${data.orderNumber}`);
+        } else {
+          console.error(`Failed to send order confirmation SMS: ${result.error}`);
+        }
+      })
+      .catch((error) => {
+        console.error("SMS sending error:", error);
+      });
+
+    // Return optimistic success (SMS sending is fire-and-forget)
     return {
       success: true,
-      messageId: `demo-${Date.now()}`,
+      messageId: `pending-${Date.now()}`,
     };
   } catch (error) {
     console.error("SMS DEMO error:", error);
@@ -76,15 +126,14 @@ export function sendShippingSMS(data: ShippingSMSData): SMSResult {
 }
 
 /**
- * Send order confirmation SMS
- * DEMO MODE: Logs to console, returns mock success
+ * Send order confirmation SMS (async version)
  */
-export function sendOrderConfirmationSMS(
+export async function sendOrderConfirmationSMSAsync(
   data: OrderConfirmationSMSData
-): SMSResult {
+): Promise<SMSResult> {
   try {
     // Validate phone number
-    if (!data.phone || !isValidPhoneNumber(data.phone)) {
+    if (!data.phone || !isValidPhoneForSMS(data.phone)) {
       return {
         success: false,
         error: "Invalid phone number",
@@ -94,23 +143,27 @@ export function sendOrderConfirmationSMS(
     // Generate SMS message in Hebrew
     const message = generateOrderConfirmationSMSMessage(data);
 
-    // DEMO MODE: Log to console instead of sending
-    console.log("\n" + "=".repeat(60));
-    console.log("📱 SMS DEMO MODE - Order Confirmation");
-    console.log("=".repeat(60));
-    console.log(`To: ${data.phone}`);
-    console.log(`Order: ${data.orderNumber}`);
-    console.log("-".repeat(60));
-    console.log(`Message:\n${message}`);
-    console.log("=".repeat(60) + "\n");
+    // Send via SendMsg API
+    const result = await sendSMS({
+      to: data.phone,
+      message,
+    });
 
-    // Return mock success
+    if (result.success) {
+      console.log(`Order confirmation SMS sent to ${data.phone} for order ${data.orderNumber}`);
+      return {
+        success: true,
+        messageId: result.messageId,
+      };
+    }
+
+    console.error(`Failed to send order confirmation SMS: ${result.error}`);
     return {
-      success: true,
-      messageId: `demo-${Date.now()}`,
+      success: false,
+      error: result.error ? getSMSErrorMessage(result.errorCode || "API_ERROR") : "Failed to send SMS",
     };
   } catch (error) {
-    console.error("SMS DEMO error:", error);
+    console.error("SMS sending error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown SMS error",
@@ -124,61 +177,34 @@ export function sendOrderConfirmationSMS(
 
 /**
  * Generate shipping notification SMS message in Hebrew
+ * Keep message short (160 chars for standard SMS)
  */
 function generateShippingSMSMessage(data: ShippingSMSData): string {
-  return `היי ${data.customerName},
-
-ההזמנה שלך יצאה למשלוח! 🎉
-
-הזמנה: ${data.orderNumber}
-מספר מעקב: ${data.trackingNumber}
-
-תוכל/י לעקוב אחר המשלוח בקישור שנשלח למייל.
-
-YL Sport
-www.yl-sport.co.il`;
+  // Short version to fit in 1 SMS (160 chars in Hebrew is ~70 chars due to encoding)
+  return `${data.customerName} שלום,
+הזמנה ${data.orderNumber} נשלחה!
+מעקב: ${data.trackingNumber}
+YL Sport`;
 }
 
 /**
  * Generate order confirmation SMS message in Hebrew
+ * Keep message short (160 chars for standard SMS)
  */
 function generateOrderConfirmationSMSMessage(
   data: OrderConfirmationSMSData
 ): string {
-  return `היי ${data.customerName},
-
-ההזמנה שלך התקבלה בהצלחה! ✅
-
-הזמנה: ${data.orderNumber}
-סכום: ₪${data.total.toFixed(2)}
-
-פרטי ההזמנה נשלחו למייל שלך.
-
-YL Sport
-www.yl-sport.co.il`;
+  return `${data.customerName} שלום,
+הזמנה ${data.orderNumber} התקבלה!
+סכום: ${data.total.toFixed(0)} ש"ח
+תודה! YL Sport`;
 }
 
 // ============================================================================
-// PHONE NUMBER VALIDATION
+// PHONE NUMBER VALIDATION (re-exported from sendmsg)
 // ============================================================================
 
-/**
- * Validate Israeli phone number format
- * Accepts: 05X-XXXXXXX, 05XXXXXXXXX, +972-5X-XXXXXXX
- */
-export function isValidPhoneNumber(phone: string): boolean {
-  // Remove all non-digit characters
-  const digitsOnly = phone.replace(/\D/g, "");
-
-  // Israeli mobile: 10 digits starting with 05
-  // Or international: 12 digits starting with 9725
-  const israeliMobileRegex = /^05\d{8}$/;
-  const internationalRegex = /^9725\d{8}$/;
-
-  return (
-    israeliMobileRegex.test(digitsOnly) || internationalRegex.test(digitsOnly)
-  );
-}
+export { isValidPhoneForSMS as isValidPhoneNumber } from "./sendmsg";
 
 /**
  * Format phone number for display
@@ -198,24 +224,3 @@ export function formatPhoneNumber(phone: string): string {
 
   return phone;
 }
-
-// ============================================================================
-// FUTURE: REAL SMS PROVIDER INTEGRATION
-// ============================================================================
-
-/**
- * TODO: Replace DEMO functions with actual SMS provider when API is received
- *
- * Example providers:
- * - Twilio: https://www.twilio.com/docs/sms
- * - Vonage (Nexmo): https://developer.vonage.com/messaging/sms/overview
- * - AWS SNS: https://docs.aws.amazon.com/sns/latest/dg/sms_publish-to-phone.html
- *
- * Implementation steps:
- * 1. Install provider SDK: npm install twilio (or other provider)
- * 2. Add API credentials to .env.local
- * 3. Create SMS client instance
- * 4. Replace console.log with actual API calls
- * 5. Handle rate limiting and errors
- * 6. Add delivery status tracking
- */
