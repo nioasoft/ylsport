@@ -158,20 +158,14 @@ export function ProductShowcase() {
               </Card>
             </div>
 
-            {/* Size Guide Preview */}
+            {/* One Size Info */}
             <div className="rounded-lg bg-primary-light p-6">
-              <h4 className="font-semibold mb-2">מדריך מידות</h4>
+              <h4 className="font-semibold mb-2">מידה אחת - One Size</h4>
               <p className="text-sm text-gray-700 mb-4">
-                מידות זמינות: S, M, L, XL
+                הטייץ מתאים לכל המידות בזכות הגמישות הגבוהה והחומר האיכותי.
                 <br />
-                לטבלת מידות מלאה גלול למטה
+                מתאים להיקפי מותניים 60-100 ס&quot;מ
               </p>
-              <a
-                href="#size-guide"
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                צפה במדריך מידות מלא ←
-              </a>
             </div>
           </div>
         </div>

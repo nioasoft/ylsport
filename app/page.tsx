@@ -3,7 +3,6 @@ import { TechnologySection } from "@/components/home/TechnologySection";
 import { ProductBenefits } from "@/components/home/ProductBenefits";
 import { Hero } from "@/components/home/Hero";
 import { ProductShowcase } from "@/components/home/ProductShowcase";
-import { SizeGuide } from "@/components/home/SizeGuide";
 import { Testimonials } from "@/components/home/Testimonials";
 import { MobileStickyBar } from "@/components/home/MobileStickyBar";
 
@@ -18,7 +17,6 @@ export default function HomePage() {
       {/* Product & Purchase */}
       <Hero />
       <ProductShowcase />
-      <SizeGuide />
 
       {/* Social Proof */}
       <Testimonials />

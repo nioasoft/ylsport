@@ -222,14 +222,15 @@ export class TranzilaSDK {
         price_type: 'G',
         currency_code: request.currency_code,
       })),
-      // Notification settings - email to customer
+      // Notification settings - email to customer (REQUIRED for PR)
       send_email: request.customer_email ? {
         sender_name: 'YL Sport',
         sender_email: 'noreply@yl-sport.co.il',
       } : undefined,
-      // Document/Receipt settings - enable automatic receipt
+      // Document/Receipt settings - automatic invoice generation
+      // document_type: 1 = קבלה, 2 = חשבונית מס, 3 = חשבונית מס קבלה
       create_document: true,
-      document_type: 'receipt', // קבלה
+      document_type: 3, // חשבונית מס קבלה
       // Payment label - this is the merchant name shown on the payment page
       payment_label: 'YL Sport',
     };

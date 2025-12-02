@@ -30,7 +30,7 @@ export function Hero() {
               </div>
 
               {/* CTA Button */}
-              <Link href="#product">
+              <Link href="/checkout">
                 <Button size="lg" className="text-lg px-10 py-7 w-full sm:w-auto sm:px-8 sm:py-6">
                   קנה עכשיו
                 </Button>
