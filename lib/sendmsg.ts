@@ -239,7 +239,7 @@ export async function sendSMS(request: SendSMSRequest): Promise<SendSMSResponse>
         MessageInnerName: `SMS_${Date.now()}`,
         MessageSubject: "",
         MessageType: 1,
-        TypeSms: request.message.length > 70 ? 2 : 1, // 1 for short, 2 for long SMS
+        TypeSms: 1, // Always use short SMS (70 chars for Hebrew) - long SMS requires separate credit
       },
     };
 

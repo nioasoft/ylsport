@@ -194,10 +194,10 @@ YL Sport`;
 function generateOrderConfirmationSMSMessage(
   data: OrderConfirmationSMSData
 ): string {
-  return `${data.customerName} שלום,
-הזמנה ${data.orderNumber} התקבלה!
-סכום: ${data.total.toFixed(0)} ש"ח
-תודה! YL Sport`;
+  // Keep message very short - Hebrew SMS is limited to ~70 chars
+  // Use only first name if available
+  const firstName = data.customerName.split(" ")[0];
+  return `${firstName}, הזמנה ${data.orderNumber} התקבלה! סה"כ ${data.total.toFixed(0)}₪ YL Sport`;
 }
 
 // ============================================================================
