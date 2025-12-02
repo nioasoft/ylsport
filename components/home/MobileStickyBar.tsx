@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
  */
 export function MobileStickyBar() {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50">
       <div className="bg-white border-t border-gray-200 shadow-2xl px-4 py-3">
         <Link href="/checkout">
           <Button

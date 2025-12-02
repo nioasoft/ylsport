@@ -100,9 +100,10 @@ const container = {
 };
 
 const header = {
-  backgroundColor: "#00BFA6",
+  backgroundColor: "#e87f93",
   padding: "24px",
   textAlign: "center" as const,
+  borderRadius: "8px 8px 0 0",
 };
 
 const h1 = {
@@ -121,7 +122,7 @@ const content = {
 };
 
 const h2 = {
-  color: "#00BFA6",
+  color: "#e87f93",
   fontSize: "24px",
   fontWeight: "bold",
   margin: "0 0 24px",
@@ -137,8 +138,8 @@ const text = {
 };
 
 const trackingBox = {
-  backgroundColor: "#E0F7F4",
-  border: "2px solid #00BFA6",
+  backgroundColor: "#fdf2f4",
+  border: "2px solid #e87f93",
   borderRadius: "8px",
   padding: "24px",
   margin: "24px 0",
@@ -146,7 +147,7 @@ const trackingBox = {
 };
 
 const trackingLabel = {
-  color: "#00897B",
+  color: "#e87f93",
   fontSize: "14px",
   fontWeight: "600",
   textTransform: "uppercase" as const,
@@ -154,7 +155,7 @@ const trackingLabel = {
 };
 
 const trackingNumber = {
-  color: "#00BFA6",
+  color: "#e87f93",
   fontSize: "28px",
   fontWeight: "bold",
   fontFamily: "monospace",
@@ -163,7 +164,7 @@ const trackingNumber = {
 };
 
 const trackingButton = {
-  backgroundColor: "#00BFA6",
+  backgroundColor: "#e87f93",
   color: "#ffffff",
   padding: "12px 32px",
   borderRadius: "6px",
@@ -186,6 +187,6 @@ const footer = {
 };
 
 const link = {
-  color: "#00BFA6",
+  color: "#e87f93",
   textDecoration: "none",
 };
