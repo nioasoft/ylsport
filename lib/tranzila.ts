@@ -416,7 +416,7 @@ export class TranzilaSDK {
       action: 1, // 1 = Debit (חיוב)
       document_language: 'heb',
       document_currency_code: 'ILS',
-      vat_percent: 17,
+      // vat_percent - not set, will use terminal default settings
       response_language: 'heb',
 
       // Client details
