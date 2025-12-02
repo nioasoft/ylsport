@@ -191,7 +191,7 @@ async function processCallback(data: Record<string, unknown>) {
     });
   }
 
-  // Send notifications in parallel (don't fail if notifications fail)
+  // Send notifications and create invoice in parallel (don't fail if any fail)
   await Promise.allSettled([
     // Send order confirmation email to customer
     sendOrderConfirmationEmail({
@@ -254,6 +254,62 @@ async function processCallback(data: Record<string, unknown>) {
         console.log("Order confirmation SMS sent successfully to:", updatedOrder.customerPhone);
       } else {
         console.error("Failed to send order confirmation SMS:", smsResult.error);
+      }
+    })(),
+
+    // Create tax invoice/receipt (חשבונית מס קבלה) via Tranzila Invoices API
+    (async () => {
+      console.log("Creating invoice for order:", updatedOrder.orderNumber);
+
+      // Build items for invoice - include products and shipping if applicable
+      const invoiceItems: { name: string; code: string; unitPrice: number; quantity: number }[] = [];
+
+      // Add product items
+      for (const item of updatedOrder.items) {
+        invoiceItems.push({
+          name: item.productName,
+          code: `${updatedOrder.orderNumber}-${item.productSize}`,
+          unitPrice: item.pricePerUnit.toNumber(),
+          quantity: item.quantity,
+        });
+      }
+
+      // Add shipping as separate line item if applicable
+      const shippingCost = updatedOrder.shippingCost.toNumber();
+      if (shippingCost > 0) {
+        invoiceItems.push({
+          name: 'משלוח',
+          code: 'SHIPPING',
+          unitPrice: shippingCost,
+          quantity: 1,
+        });
+      }
+
+      const invoiceResult = await tranzila.createInvoice({
+        customerName: updatedOrder.customerName,
+        customerEmail: updatedOrder.customerEmail,
+        customerPhone: updatedOrder.customerPhone,
+        customerAddress: updatedOrder.shippingAddress || undefined,
+        customerCity: updatedOrder.shippingCity || undefined,
+        items: invoiceItems,
+        paymentMethod: 'credit_card',
+        amount: updatedOrder.total.toNumber(),
+        ccLastDigits: callbackData.ccno || undefined,
+        transactionIndex: callbackData.index ? parseInt(callbackData.index) : undefined,
+      });
+
+      if (invoiceResult.success) {
+        console.log("Invoice created successfully:", invoiceResult.documentNumber);
+
+        // Save invoice ID to order
+        await prisma.order.update({
+          where: { id: updatedOrder.id },
+          data: {
+            invoiceNumber: invoiceResult.documentNumber,
+          },
+        });
+      } else {
+        console.error("Failed to create invoice:", invoiceResult.error);
       }
     })(),
   ]);

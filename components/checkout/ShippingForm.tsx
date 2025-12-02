@@ -70,6 +70,12 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
   };
 
   const onFormSubmit = (data: ShippingFormData) => {
+    // For self-pickup, set default address values
+    if (data.shippingMethod === "SELF_PICKUP") {
+      data.shippingAddress = "איסוף עצמי";
+      data.shippingCity = "באר שבע";
+      data.shippingPostalCode = "0000000";
+    }
     onSubmit(data);
   };
 

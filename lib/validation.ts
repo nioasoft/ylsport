@@ -23,24 +23,60 @@ export const shippingFormSchema = z.object({
     .string()
     .regex(phoneRegex, "מספר טלפון לא תקין (נדרש פורמט ישראלי)"),
 
+  // Address fields - optional for self-pickup, required for delivery
   shippingAddress: z
     .string()
-    .min(5, "כתובת חייבת להכיל לפחות 5 תווים")
-    .max(200, "כתובת ארוכה מדי"),
+    .max(200, "כתובת ארוכה מדי")
+    .optional()
+    .or(z.literal("")),
 
   shippingCity: z
     .string()
-    .min(2, "שם עיר חייב להכיל לפחות 2 תווים")
     .max(100, "שם עיר ארוך מדי")
-    .regex(hebrewNameRegex, "שם העיר חייב להיות בעברית בלבד"),
+    .optional()
+    .or(z.literal("")),
 
   shippingPostalCode: z
     .string()
-    .regex(/^\d{7}$/, "מיקוד חייב להכיל 7 ספרות"),
+    .optional()
+    .or(z.literal("")),
 
   shippingMethod: z.enum(["STANDARD_DELIVERY", "SELF_PICKUP"], {
     message: "אנא בחר שיטת משלוח תקינה",
   }),
+}).superRefine((data, ctx) => {
+  // If delivery method selected, address fields are required
+  if (data.shippingMethod === "STANDARD_DELIVERY") {
+    if (!data.shippingAddress || data.shippingAddress.length < 5) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "כתובת חייבת להכיל לפחות 5 תווים",
+        path: ["shippingAddress"],
+      });
+    }
+
+    if (!data.shippingCity || data.shippingCity.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "שם עיר חייב להכיל לפחות 2 תווים",
+        path: ["shippingCity"],
+      });
+    } else if (!hebrewNameRegex.test(data.shippingCity)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "שם העיר חייב להיות בעברית בלבד",
+        path: ["shippingCity"],
+      });
+    }
+
+    if (!data.shippingPostalCode || !/^\d{7}$/.test(data.shippingPostalCode)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "מיקוד חייב להכיל 7 ספרות",
+        path: ["shippingPostalCode"],
+      });
+    }
+  }
 });
 
 export type ShippingFormData = z.infer<typeof shippingFormSchema>;

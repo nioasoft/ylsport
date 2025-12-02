@@ -41,6 +41,32 @@ interface TranzilaVerificationResult {
   transactionId?: string;
 }
 
+export interface TranzilaInvoiceRequest {
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  customerCity?: string;
+  items: {
+    name: string;
+    code?: string;
+    unitPrice: number;
+    quantity: number;
+  }[];
+  paymentMethod: 'credit_card' | 'cash' | 'bank_transfer';
+  amount: number;
+  ccLastDigits?: string;
+  transactionIndex?: number;
+}
+
+interface TranzilaInvoiceResponse {
+  success: boolean;
+  documentId?: string;
+  documentNumber?: string;
+  retrievalKey?: string;
+  error?: string;
+}
+
 // ============================================================================
 // RESPONSE CODES
 // ============================================================================
@@ -118,10 +144,10 @@ export class TranzilaSDK {
   private secret: string;
 
   constructor() {
-    this.apiHost = process.env.TRANZILA_API_HOST || 'https://api.tranzila.com';
-    this.terminalName = process.env.TRANZILA_TERMINAL_NAME || '';
-    this.appKey = process.env.TRANZILA_PUBLIC_KEY || '';
-    this.secret = process.env.TRANZILA_PRIVATE_KEY || '';
+    this.apiHost = (process.env.TRANZILA_API_HOST || 'https://api.tranzila.com').trim();
+    this.terminalName = (process.env.TRANZILA_TERMINAL_NAME || '').trim();
+    this.appKey = (process.env.TRANZILA_PUBLIC_KEY || '').trim();
+    this.secret = (process.env.TRANZILA_PRIVATE_KEY || '').trim();
 
     if (!this.terminalName || !this.secret || !this.appKey) {
       console.error('Tranzila configuration missing: TERMINAL_NAME, PUBLIC_KEY or PRIVATE_KEY not found');
@@ -364,6 +390,126 @@ export class TranzilaSDK {
       message: 'תשלום אומת בהצלחה',
       transactionId: callbackData.ConfirmationCode || callbackData.index,
     };
+  }
+
+  /**
+   * Create invoice/receipt document after successful payment
+   * Endpoint: https://billing5.tranzila.com/api/documents_db/create_document
+   * document_type: "IR" = חשבונית מס קבלה (Invoice-Receipt)
+   */
+  async createInvoice(request: TranzilaInvoiceRequest): Promise<TranzilaInvoiceResponse> {
+    const endpoint = 'https://billing5.tranzila.com/api/documents_db/create_document';
+
+    // Map payment method to Tranzila code
+    const paymentMethodMap: Record<string, number> = {
+      'credit_card': 1,
+      'cash': 5,
+      'bank_transfer': 4,
+    };
+
+    const today = new Date().toISOString().split('T')[0]; // yyyy-mm-dd format
+
+    const payload = {
+      terminal_name: this.terminalName,
+      document_date: today,
+      document_type: 'IR', // Invoice-Receipt = חשבונית מס קבלה
+      action: 1, // 1 = Debit (חיוב)
+      document_language: 'heb',
+      document_currency_code: 'ILS',
+      vat_percent: 17,
+      response_language: 'heb',
+
+      // Client details
+      client_name: request.customerName,
+      client_email: request.customerEmail,
+      client_address_line_1: request.customerAddress || '',
+      client_city: request.customerCity || '',
+      client_country_code: 'IL',
+
+      // Items
+      items: request.items.map((item, index) => ({
+        type: 'I',
+        code: item.code || `ITEM-${index + 1}`,
+        name: item.name,
+        price_type: 'G', // Gross (כולל מע"מ)
+        unit_price: item.unitPrice,
+        units_number: item.quantity,
+        unit_type: 1,
+        currency_code: 'ILS',
+        to_doc_currency_exchange_rate: 1,
+      })),
+
+      // Payments
+      payments: [
+        {
+          payment_method: paymentMethodMap[request.paymentMethod] || 1,
+          payment_date: today,
+          amount: request.amount,
+          currency_code: 'ILS',
+          to_doc_currency_exchange_rate: 1,
+          ...(request.paymentMethod === 'credit_card' && request.ccLastDigits && {
+            cc_last_4_digits: request.ccLastDigits,
+            cc_credit_term: 1, // Regular payment
+            cc_brand: 1, // Default brand
+          }),
+        },
+      ],
+
+      // Transaction index for correlation (optional)
+      ...(request.transactionIndex && { txnindex: request.transactionIndex }),
+
+      created_by_system: 'YL Sport Website',
+    };
+
+    const headers = this.generateAuthHeaders();
+
+    try {
+      console.log('Creating Tranzila invoice:', endpoint);
+      console.log('Invoice payload:', JSON.stringify(payload, null, 2));
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload),
+      });
+
+      const responseText = await response.text();
+      console.log('Tranzila invoice raw response:', responseText);
+
+      let responseData: any;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        return {
+          success: false,
+          error: `Invalid response: ${responseText.substring(0, 200)}`,
+        };
+      }
+
+      console.log('Tranzila invoice response:', JSON.stringify(responseData, null, 2));
+
+      // Check for success (status_code 0)
+      if (responseData.status_code === 0) {
+        return {
+          success: true,
+          documentId: responseData.document?.id,
+          documentNumber: responseData.document?.number,
+          retrievalKey: responseData.document?.retrieval_key,
+        };
+      }
+
+      return {
+        success: false,
+        error: responseData.status_msg || `Error code: ${responseData.status_code}`,
+      };
+
+    } catch (error) {
+      console.error('Tranzila createInvoice error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 }
 

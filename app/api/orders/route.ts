@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
         customerPhone: data.customerPhone,
 
         // Shipping Information
-        shippingAddress: data.shippingAddress,
-        shippingCity: data.shippingCity,
-        shippingPostalCode: data.shippingPostalCode,
+        shippingAddress: data.shippingAddress || "איסוף עצמי",
+        shippingCity: data.shippingCity || "באר שבע",
+        shippingPostalCode: data.shippingPostalCode || "0000000",
         shippingMethod: data.shippingMethod,
 
         // Pricing
@@ -75,13 +75,14 @@ export async function POST(request: NextRequest) {
 
     // Create Tranzila payment
     const tranzila = getTranzilaSDK();
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yl-sport.co.il';
 
     const paymentResponse = await tranzila.createPayment({
       amount: order.total.toNumber(),
       currency_code: "ILS", // Or "NIS" depending on API requirement
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/order/confirmation?orderNumber=${orderNumber}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout?error=payment_cancelled`,
-      notify_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/tranzila-callback`,
+      success_url: `${siteUrl}/order/confirmation?orderNumber=${orderNumber}`,
+      cancel_url: `${siteUrl}/checkout?error=payment_cancelled`,
+      notify_url: `${siteUrl}/api/payment/tranzila-callback`,
       transaction_id: order.orderNumber, // Use our order number as reference
       customer_name: order.customerName,
       customer_email: order.customerEmail,
@@ -92,6 +93,12 @@ export async function POST(request: NextRequest) {
     if (!paymentResponse.success || !paymentResponse.payment_url) {
       throw new Error(paymentResponse.error || "Failed to generate payment link");
     }
+
+    // Save Tranzila pr_id to order (required for callback to find order)
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { tranzilaPaymentId: paymentResponse.transaction_id },
+    });
 
     // Return payment URL to client
     return NextResponse.json({

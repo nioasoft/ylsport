@@ -86,6 +86,9 @@ model Order {
   // Payment Reference
   tranzilaPaymentId  String?        @unique // Tranzila pr_id for callback matching
 
+  // Invoice Reference
+  invoiceNumber      String?        // Tranzila invoice document number
+
   // Relationships
   items              OrderItem[]
   discountCode       DiscountCode?  @relation(fields: [discountCodeId], references: [id])
