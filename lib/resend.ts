@@ -213,13 +213,21 @@ export async function sendAdminOrderNotificationEmail(
     const { AdminOrderNotificationEmail } = await import("@/emails/admin-order-notification");
 
     const config = getEmailConfig();
-    const result = await resend.emails.send({
+
+    // Build email payload
+    const emailPayload: Parameters<typeof resend.emails.send>[0] = {
       from: config.from,
       to: data.to,
-      reply_to: config.replyTo,
       subject: `הזמנה חדשה ${data.orderNumber} - YL Sport Admin`,
       react: AdminOrderNotificationEmail(data),
-    });
+    };
+
+    // Add reply_to only if valid
+    if (config.replyTo && config.replyTo.trim() && config.replyTo.includes('@')) {
+      emailPayload.reply_to = config.replyTo.trim();
+    }
+
+    const result = await resend.emails.send(emailPayload);
 
     if (result.error) {
       console.error("Resend error:", result.error);
@@ -256,13 +264,21 @@ export async function sendNewsletterConfirmationEmail(
     const { NewsletterConfirmationEmail } = await import("@/emails/newsletter-confirmation");
 
     const config = getEmailConfig();
-    const result = await resend.emails.send({
+
+    // Build email payload
+    const emailPayload: Parameters<typeof resend.emails.send>[0] = {
       from: config.from,
       to: email,
-      reply_to: config.replyTo,
       subject: "הצטרפת לניוזלטר של YL Sport!",
       react: NewsletterConfirmationEmail({ email, name }),
-    });
+    };
+
+    // Add reply_to only if valid
+    if (config.replyTo && config.replyTo.trim() && config.replyTo.includes('@')) {
+      emailPayload.reply_to = config.replyTo.trim();
+    }
+
+    const result = await resend.emails.send(emailPayload);
 
     if (result.error) {
       console.error("Resend error:", result.error);
@@ -338,13 +354,21 @@ export async function sendBulkNewsletterEmails(
     for (const subscriber of batch) {
       try {
         const config = getEmailConfig();
-        await resend.emails.send({
+
+        // Build email payload
+        const emailPayload: Parameters<typeof resend.emails.send>[0] = {
           from: config.from,
           to: subscriber.email,
-          reply_to: config.replyTo,
           subject,
           html: htmlContent,
-        });
+        };
+
+        // Add reply_to only if valid
+        if (config.replyTo && config.replyTo.trim() && config.replyTo.includes('@')) {
+          emailPayload.reply_to = config.replyTo.trim();
+        }
+
+        await resend.emails.send(emailPayload);
 
         results.sent++;
       } catch (error) {
