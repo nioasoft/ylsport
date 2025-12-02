@@ -22,11 +22,36 @@ export async function POST(request: NextRequest) {
   console.log("Tranzila callback received (POST)");
 
   try {
-    // Parse request body
-    const body = await request.json();
-    console.log("Tranzila callback data:", JSON.stringify(body, null, 2));
+    // Check content type - Tranzila sends form data (QSTR format), not JSON
+    const contentType = request.headers.get("content-type") || "";
+    console.log("Content-Type:", contentType);
 
-    return await processCallback(body);
+    let callbackData: Record<string, string> = {};
+
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      // Parse form data (QSTR format)
+      const formData = await request.formData();
+      formData.forEach((value, key) => {
+        callbackData[key] = value.toString();
+      });
+    } else if (contentType.includes("application/json")) {
+      // Parse JSON
+      callbackData = await request.json();
+    } else {
+      // Try to parse as text and convert from query string format
+      const text = await request.text();
+      console.log("Raw body:", text);
+
+      // Parse query string format: key1=value1&key2=value2
+      const params = new URLSearchParams(text);
+      params.forEach((value, key) => {
+        callbackData[key] = value;
+      });
+    }
+
+    console.log("Tranzila callback data:", JSON.stringify(callbackData, null, 2));
+
+    return await processCallback(callbackData);
   } catch (error) {
     console.error("Tranzila callback error (POST):", error);
 
