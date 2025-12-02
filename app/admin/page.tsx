@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatPhoneNumber } from "@/lib/sms-templates";
+import { useToast } from "@/hooks/use-toast";
 
 // Types
 interface OrderItem {
@@ -71,6 +72,7 @@ interface Pagination {
 }
 
 export default function AdminDashboard() {
+  const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -88,6 +90,16 @@ export default function AdminDashboard() {
   // Selected order for details/editing
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // Statistics
+  const [stats, setStats] = useState<{
+    totalOrders: number;
+    monthlyOrders: number;
+    totalRevenue: number;
+    monthlyRevenue: number;
+    pendingProcessing: number;
+    staleShipped: number;
+  } | null>(null);
 
   // Status update
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -138,9 +150,23 @@ export default function AdminDashboard() {
     }
   };
 
-  // Load orders on mount and when filters change
+  // Fetch stats
+  const fetchStats = async () => {
+    try {
+      const response = await fetch("/api/admin/stats");
+      const data = await response.json();
+      if (data.success) {
+        setStats(data.stats);
+      }
+    } catch (err) {
+      console.error("Fetch stats error:", err);
+    }
+  };
+
+  // Load orders and stats on mount and when filters change
   useEffect(() => {
     fetchOrders();
+    fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page, statusFilter]);
 
@@ -191,9 +217,16 @@ export default function AdminDashboard() {
       // Update selected order
       setSelectedOrder({ ...selectedOrder, status: newStatus });
 
-      alert("הסטטוס עודכן בהצלחה");
+      toast({
+        title: "הסטטוס עודכן",
+        description: "הסטטוס עודכן בהצלחה",
+      });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "שגיאה בעדכון הסטטוס");
+      toast({
+        title: "שגיאה",
+        description: err instanceof Error ? err.message : "שגיאה בעדכון הסטטוס",
+        variant: "destructive",
+      });
       console.error("Update status error:", err);
     } finally {
       setUpdatingStatus(false);
@@ -203,7 +236,11 @@ export default function AdminDashboard() {
   // Update tracking number
   const updateTrackingNumber = async () => {
     if (!selectedOrder || !newTrackingNumber.trim()) {
-      alert("נא להזין מספר מעקב");
+      toast({
+        title: "שגיאה",
+        description: "נא להזין מספר מעקב",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -224,13 +261,22 @@ export default function AdminDashboard() {
 
       // Refresh orders
       await fetchOrders();
+      await fetchStats();
 
-      // Update selected order
-      setSelectedOrder({ ...selectedOrder, trackingNumber: newTrackingNumber });
+      // Close modal and show success toast
+      setShowDetailModal(false);
+      setSelectedOrder(null);
 
-      alert(data.message || "מספר המעקב עודכן והתראות נשלחו ללקוח");
+      toast({
+        title: "מספר המעקב עודכן",
+        description: data.message || "מספר המעקב עודכן והתראות נשלחו ללקוח",
+      });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "שגיאה בעדכון מספר המעקב");
+      toast({
+        title: "שגיאה",
+        description: err instanceof Error ? err.message : "שגיאה בעדכון מספר המעקב",
+        variant: "destructive",
+      });
       console.error("Update tracking error:", err);
     } finally {
       setUpdatingTracking(false);
@@ -264,6 +310,8 @@ export default function AdminDashboard() {
         return "bg-gray-100 text-gray-800";
       case "CANCELLED":
         return "bg-red-100 text-red-800";
+      case "REFUNDED":
+        return "bg-violet-100 text-violet-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -284,6 +332,8 @@ export default function AdminDashboard() {
         return "נמסר";
       case "CANCELLED":
         return "בוטל";
+      case "REFUNDED":
+        return "הוחזר";
       default:
         return status;
     }
@@ -298,6 +348,63 @@ export default function AdminDashboard() {
           סה&quot;כ {pagination.total} הזמנות
         </p>
       </div>
+
+      {/* Statistics Dashboard */}
+      {stats && (
+        <div className="space-y-4">
+          {/* Action Items - Important alerts */}
+          {(stats.pendingProcessing > 0 || stats.staleShipped > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stats.pendingProcessing > 0 && (
+                <Card className="border-orange-300 bg-orange-50">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-orange-700 font-medium">ממתינות לטיפול</p>
+                    <p className="text-3xl font-bold text-orange-600">{stats.pendingProcessing}</p>
+                    <p className="text-xs text-orange-600 mt-1">הזמנות ששולמו וממתינות למשלוח</p>
+                  </CardContent>
+                </Card>
+              )}
+              {stats.staleShipped > 0 && (
+                <Card className="border-red-300 bg-red-50">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-red-700 font-medium">תקועות במשלוח</p>
+                    <p className="text-3xl font-bold text-red-600">{stats.staleShipped}</p>
+                    <p className="text-xs text-red-600 mt-1">נשלחו לפני יותר מ-10 ימים</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* General Statistics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-gray-600">סה&quot;כ הזמנות</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-gray-600">הזמנות החודש</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.monthlyOrders}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-gray-600">סה&quot;כ הכנסות</p>
+                <p className="text-2xl font-bold text-green-600">₪{stats.totalRevenue.toLocaleString()}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-gray-600">הכנסות החודש</p>
+                <p className="text-2xl font-bold text-green-600">₪{stats.monthlyRevenue.toLocaleString()}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>
@@ -321,6 +428,7 @@ export default function AdminDashboard() {
                   <SelectItem value="SHIPPED">נשלח</SelectItem>
                   <SelectItem value="DELIVERED">נמסר</SelectItem>
                   <SelectItem value="CANCELLED">בוטל</SelectItem>
+                  <SelectItem value="REFUNDED">הוחזר</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -368,7 +476,10 @@ export default function AdminDashboard() {
                 <TableBody>
                   {orders.map((order) => (
                     <TableRow key={order.id}>
-                      <TableCell className="font-medium">
+                      <TableCell
+                        className="font-medium cursor-pointer text-pink-600 hover:underline"
+                        onClick={() => openOrderDetails(order)}
+                      >
                         {order.orderNumber}
                       </TableCell>
                       <TableCell>
@@ -439,7 +550,7 @@ export default function AdminDashboard() {
 
       {/* Order Detail Modal */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto bg-white shadow-xl border">
           <DialogHeader>
             <DialogTitle>פרטי הזמנה {selectedOrder?.orderNumber}</DialogTitle>
             <DialogDescription>
@@ -538,6 +649,7 @@ export default function AdminDashboard() {
                       <SelectItem value="SHIPPED">נשלח</SelectItem>
                       <SelectItem value="DELIVERED">נמסר</SelectItem>
                       <SelectItem value="CANCELLED">בוטל</SelectItem>
+                      <SelectItem value="REFUNDED">הוחזר</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button

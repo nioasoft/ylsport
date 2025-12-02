@@ -161,13 +161,23 @@ export async function sendOrderStatusUpdateEmail(
     const { OrderStatusUpdateEmail } = await import("@/emails/order-status-update");
 
     const config = getEmailConfig();
-    const result = await resend.emails.send({
+    console.log("Sending status update email to:", data.to);
+    console.log("Status update data:", JSON.stringify(data));
+
+    // Build email payload
+    const emailPayload: Parameters<typeof resend.emails.send>[0] = {
       from: config.from,
       to: data.to,
-      reply_to: config.replyTo,
       subject: `עדכון סטטוס הזמנה ${data.orderNumber} - YL Sport`,
       react: OrderStatusUpdateEmail(data),
-    });
+    };
+
+    // Add reply_to only if valid
+    if (config.replyTo && config.replyTo.trim() && config.replyTo.includes('@')) {
+      emailPayload.reply_to = config.replyTo.trim();
+    }
+
+    const result = await resend.emails.send(emailPayload);
 
     if (result.error) {
       console.error("Resend error:", result.error);

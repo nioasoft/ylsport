@@ -19,6 +19,7 @@ const VALID_STATUSES = [
   "SHIPPED",
   "DELIVERED",
   "CANCELLED",
+  "REFUNDED",
 ] as const;
 
 type OrderStatus = (typeof VALID_STATUSES)[number];
@@ -69,8 +70,11 @@ export async function PATCH(
       },
     });
 
-    // Auto-send shipping notification if status is SHIPPED and tracking exists
-    if (status === "SHIPPED" && updatedOrder.trackingNumber) {
+    // Auto-send shipping notification if:
+    // - New status is SHIPPED
+    // - Previous status was NOT SHIPPED (to avoid duplicate notifications)
+    // - Tracking number exists
+    if (status === "SHIPPED" && order.status !== "SHIPPED" && updatedOrder.trackingNumber) {
       try {
         await sendShippingNotification(updatedOrder);
       } catch (notificationError) {

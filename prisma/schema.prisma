@@ -36,6 +36,7 @@ enum OrderStatus {
   SHIPPED          // Order shipped, tracking number added
   DELIVERED        // Order delivered to customer
   CANCELLED        // Order cancelled (by customer or admin)
+  REFUNDED         // Order refunded (payment returned to customer)
 
   @@map("order_status")
 }

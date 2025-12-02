@@ -89,12 +89,14 @@ const main = {
   backgroundColor: "#f6f9fc",
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  direction: "rtl" as const,
 };
 
 const container = {
   margin: "0 auto",
   padding: "20px 0 48px",
   maxWidth: "600px",
+  direction: "rtl" as const,
 };
 
 const header = {
@@ -131,6 +133,7 @@ const text = {
   fontSize: "16px",
   lineHeight: "24px",
   margin: "16px 0",
+  textAlign: "right" as const,
 };
 
 const trackingBox = {

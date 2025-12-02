@@ -29,6 +29,23 @@ export async function PATCH(
       );
     }
 
+    const trimmedTrackingNumber = trackingNumber.trim();
+
+    // Check for duplicate tracking number (except for current order)
+    const existingOrderWithTracking = await prisma.order.findFirst({
+      where: {
+        trackingNumber: trimmedTrackingNumber,
+        id: { not: params.id },
+      },
+    });
+
+    if (existingOrderWithTracking) {
+      return NextResponse.json(
+        { error: `מספר מעקב זה כבר קיים בהזמנה ${existingOrderWithTracking.orderNumber}` },
+        { status: 400 }
+      );
+    }
+
     // Get current order
     const order = await prisma.order.findUnique({
       where: { id: params.id },
@@ -44,11 +61,12 @@ export async function PATCH(
       );
     }
 
-    // Update order with tracking number
+    // Update order with tracking number AND set status to SHIPPED
     const updatedOrder = await prisma.order.update({
       where: { id: params.id },
       data: {
-        trackingNumber: trackingNumber.trim(),
+        trackingNumber: trimmedTrackingNumber,
+        status: "SHIPPED",
         updatedAt: new Date(),
       },
       include: {
@@ -56,28 +74,23 @@ export async function PATCH(
       },
     });
 
-    // Auto-send shipping notification (email + SMS)
-    try {
-      await sendShippingNotification(updatedOrder);
-    } catch (notificationError) {
-      console.error("Failed to send shipping notification:", notificationError);
-      // Don't fail the tracking update if notification fails
-      // Return success but with warning
-      return NextResponse.json({
-        success: true,
-        warning: "מספר המעקב נשמר אך שליחת ההתראות נכשלה",
-        order: {
-          id: updatedOrder.id,
-          orderNumber: updatedOrder.orderNumber,
-          trackingNumber: updatedOrder.trackingNumber,
-          updatedAt: updatedOrder.updatedAt,
-        },
+    // Send notifications in the background (fire-and-forget for faster response)
+    sendShippingNotification(updatedOrder)
+      .then((result) => {
+        if (result.success) {
+          console.log(`✅ Notifications sent for order ${updatedOrder.orderNumber}`);
+        } else {
+          console.error(`⚠️ Notification issues for order ${updatedOrder.orderNumber}:`, result.errors);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to send shipping notification:", error);
       });
-    }
 
+    // Return immediately without waiting for notifications
     return NextResponse.json({
       success: true,
-      message: "מספר המעקב נשמר והתראות נשלחו ללקוח",
+      message: "מספר המעקב נשמר והתראות נשלחות ללקוח",
       order: {
         id: updatedOrder.id,
         orderNumber: updatedOrder.orderNumber,

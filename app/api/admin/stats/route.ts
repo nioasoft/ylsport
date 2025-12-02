@@ -1,0 +1,108 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+/**
+ * GET /api/admin/stats
+ * Returns dashboard statistics: total orders, monthly orders, revenue, action items
+ */
+export async function GET() {
+  try {
+    // Get start of current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // 10 days ago for stale shipped orders
+    const tenDaysAgo = new Date();
+    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+
+    // Run all queries in parallel for performance
+    const [
+      totalOrders,
+      monthlyOrders,
+      totalRevenueResult,
+      monthlyRevenueResult,
+      pendingProcessing,
+      staleShipped,
+    ] = await Promise.all([
+      // Total orders count (all paid orders)
+      prisma.order.count({
+        where: {
+          paymentStatus: "COMPLETED",
+        },
+      }),
+
+      // Monthly orders count
+      prisma.order.count({
+        where: {
+          paymentStatus: "COMPLETED",
+          createdAt: {
+            gte: startOfMonth,
+          },
+        },
+      }),
+
+      // Total revenue (sum of all paid orders)
+      prisma.order.aggregate({
+        _sum: {
+          total: true,
+        },
+        where: {
+          paymentStatus: "COMPLETED",
+        },
+      }),
+
+      // Monthly revenue
+      prisma.order.aggregate({
+        _sum: {
+          total: true,
+        },
+        where: {
+          paymentStatus: "COMPLETED",
+          createdAt: {
+            gte: startOfMonth,
+          },
+        },
+      }),
+
+      // Orders pending processing (PAID status - waiting to be shipped)
+      prisma.order.count({
+        where: {
+          status: {
+            in: ["PAID", "PROCESSING"],
+          },
+        },
+      }),
+
+      // Stale shipped orders (SHIPPED for more than 10 days)
+      prisma.order.count({
+        where: {
+          status: "SHIPPED",
+          updatedAt: {
+            lt: tenDaysAgo,
+          },
+        },
+      }),
+    ]);
+
+    const totalRevenue = totalRevenueResult._sum.total?.toNumber() || 0;
+    const monthlyRevenue = monthlyRevenueResult._sum.total?.toNumber() || 0;
+
+    return NextResponse.json({
+      success: true,
+      stats: {
+        totalOrders,
+        monthlyOrders,
+        totalRevenue,
+        monthlyRevenue,
+        pendingProcessing,
+        staleShipped,
+      },
+    });
+  } catch (error) {
+    console.error("Stats API error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch statistics" },
+      { status: 500 }
+    );
+  }
+}
