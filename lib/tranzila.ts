@@ -459,6 +459,9 @@ export class TranzilaSDK {
       ...(request.transactionIndex && { txnindex: request.transactionIndex }),
 
       created_by_system: 'YL Sport Website',
+
+      // Send document to client via email
+      send_document_to_client: true,
     };
 
     const headers = this.generateAuthHeaders();
