@@ -101,6 +101,9 @@ export default function AdminDashboard() {
     staleShipped: number;
   } | null>(null);
 
+  // Last refresh time
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+
   // Status update
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [newStatus, setNewStatus] = useState("");
@@ -139,6 +142,7 @@ export default function AdminDashboard() {
       if (data.success) {
         setOrders(data.orders);
         setPagination(data.pagination);
+        setLastRefresh(new Date());
       } else {
         throw new Error(data.message || "Failed to fetch orders");
       }
@@ -169,6 +173,20 @@ export default function AdminDashboard() {
     fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page, statusFilter]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Only refresh if not loading and no modal open
+      if (!loading && !showDetailModal) {
+        fetchOrders();
+        fetchStats();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, showDetailModal]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -342,11 +360,26 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">ניהול הזמנות</h1>
-        <p className="text-gray-600 mt-1">
-          סה&quot;כ {pagination.total} הזמנות
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">ניהול הזמנות</h1>
+          <p className="text-gray-600 mt-1">
+            סה&quot;כ {pagination.total} הזמנות
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">
+            עודכן: {lastRefresh.toLocaleTimeString("he-IL")}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { fetchOrders(); fetchStats(); }}
+            disabled={loading}
+          >
+            {loading ? "מרענן..." : "רענן עכשיו"}
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Dashboard */}
