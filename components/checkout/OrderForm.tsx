@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatPrice } from "@/lib/utils";
 
-const PRODUCT_PRICE = 299;
+const PRODUCT_PRICE = 1; // TEST MODE - change back to 299 for production
 
 interface OrderItem {
   size: string;
