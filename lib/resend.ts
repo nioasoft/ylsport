@@ -81,10 +81,16 @@ export function getResendClient(): Resend {
 // EMAIL CONFIGURATION
 // ============================================================================
 
-const emailConfig: EmailConfig = {
-  from: process.env.RESEND_FROM_EMAIL || "YL Sport <noreply@yl-sport.co.il>",
-  replyTo: process.env.RESEND_REPLY_TO_EMAIL,
-};
+/**
+ * Get email configuration at runtime (not module load time)
+ * This ensures environment variables are read correctly in serverless environments
+ */
+function getEmailConfig(): EmailConfig {
+  return {
+    from: process.env.RESEND_FROM_EMAIL || "YL Sport <noreply@yl-sport.co.il>",
+    replyTo: process.env.RESEND_REPLY_TO_EMAIL,
+  };
+}
 
 // ============================================================================
 // EMAIL SENDING FUNCTIONS
@@ -102,10 +108,11 @@ export async function sendOrderConfirmationEmail(
     // Import email template dynamically
     const { OrderConfirmationEmail } = await import("@/emails/order-confirmation");
 
+    const config = getEmailConfig();
     const result = await resend.emails.send({
-      from: emailConfig.from,
+      from: config.from,
       to: data.to,
-      reply_to: emailConfig.replyTo,
+      reply_to: config.replyTo,
       subject: `אישור הזמנה ${data.orderNumber} - YL Sport`,
       react: OrderConfirmationEmail(data),
     });
@@ -143,10 +150,11 @@ export async function sendOrderStatusUpdateEmail(
     // Import email template dynamically
     const { OrderStatusUpdateEmail } = await import("@/emails/order-status-update");
 
+    const config = getEmailConfig();
     const result = await resend.emails.send({
-      from: emailConfig.from,
+      from: config.from,
       to: data.to,
-      reply_to: emailConfig.replyTo,
+      reply_to: config.replyTo,
       subject: `עדכון סטטוס הזמנה ${data.orderNumber} - YL Sport`,
       react: OrderStatusUpdateEmail(data),
     });
@@ -184,10 +192,11 @@ export async function sendAdminOrderNotificationEmail(
     // Import email template dynamically
     const { AdminOrderNotificationEmail } = await import("@/emails/admin-order-notification");
 
+    const config = getEmailConfig();
     const result = await resend.emails.send({
-      from: emailConfig.from,
+      from: config.from,
       to: data.to,
-      reply_to: emailConfig.replyTo,
+      reply_to: config.replyTo,
       subject: `הזמנה חדשה ${data.orderNumber} - YL Sport Admin`,
       react: AdminOrderNotificationEmail(data),
     });
@@ -226,10 +235,11 @@ export async function sendNewsletterConfirmationEmail(
     // Import email template dynamically
     const { NewsletterConfirmationEmail } = await import("@/emails/newsletter-confirmation");
 
+    const config = getEmailConfig();
     const result = await resend.emails.send({
-      from: emailConfig.from,
+      from: config.from,
       to: email,
-      reply_to: emailConfig.replyTo,
+      reply_to: config.replyTo,
       subject: "הצטרפת לניוזלטר של YL Sport!",
       react: NewsletterConfirmationEmail({ email, name }),
     });
@@ -307,10 +317,11 @@ export async function sendBulkNewsletterEmails(
 
     for (const subscriber of batch) {
       try {
+        const config = getEmailConfig();
         await resend.emails.send({
-          from: emailConfig.from,
+          from: config.from,
           to: subscriber.email,
-          reply_to: emailConfig.replyTo,
+          reply_to: config.replyTo,
           subject,
           html: htmlContent,
         });
