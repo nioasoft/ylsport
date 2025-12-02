@@ -111,8 +111,6 @@ export async function sendOrderConfirmationEmail(
     const config = getEmailConfig();
     console.log("Email config - from:", config.from);
     console.log("Email config - replyTo:", config.replyTo);
-    console.log("Email config - replyTo length:", config.replyTo?.length);
-    console.log("Email config - replyTo charCodes:", config.replyTo ? [...config.replyTo].map(c => c.charCodeAt(0)).join(',') : 'undefined');
 
     // Only include reply_to if it's a valid non-empty string
     const emailPayload: Parameters<typeof resend.emails.send>[0] = {
