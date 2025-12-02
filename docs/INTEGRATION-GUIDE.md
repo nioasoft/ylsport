@@ -2,7 +2,7 @@
 
 A comprehensive technical guide for integrating Israeli payment gateways (Tranzila), SMS services (SendMsg/שלח מסר), and email notifications (Resend) in Next.js e-commerce projects.
 
-**Last Updated:** December 2024
+**Last Updated:** December 2025
 **Project Reference:** YL-Sport E-Commerce
 
 ---
@@ -294,67 +294,185 @@ Apple Pay is supported through Tranzila's payment page. No code changes required
 - Tranzila Apple Pay Guide: https://docs.tranzila.com/docs/payments-billing/795m2yi7q4nmq-iframe-integration
 - Apple Pay on the Web: https://developer.apple.com/documentation/apple_pay_on_the_web
 
-### Automatic Document Generation (Invoices/Receipts)
+### Invoice/Receipt Generation (Invoices API)
 
-Tranzila can automatically generate documents (invoices, receipts) after successful payment.
+**IMPORTANT:** The `create_document` and `document_type` parameters in Payment Request **DO NOT WORK** reliably. Use the separate **Invoices API** instead!
+
+#### Invoices API Endpoint
+
+```
+POST https://billing5.tranzila.com/api/documents_db/create_document
+```
+
+Uses the same HMAC-SHA256 authentication as Payment Requests API.
 
 #### Document Types
 
 | Code | Type | Hebrew |
 |------|------|--------|
-| 1 | Receipt | קבלה |
-| 2 | Tax Invoice | חשבונית מס |
-| 3 | Tax Invoice Receipt | חשבונית מס קבלה |
+| `"IR"` | Invoice-Receipt | חשבונית מס קבלה |
+| `"RE"` | Receipt Only | קבלה |
+| `"DI"` | Tax Invoice | חשבונית מס |
 
-#### Configuration
+#### Creating an Invoice After Payment
 
-In the payment request payload:
+Call this API from your IPN callback after successful payment:
 
 ```typescript
-const payload = {
-  // ... other fields ...
+async function createInvoice(order: Order) {
+  const today = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
 
-  // Enable automatic document generation
-  create_document: true,
-  document_type: 3,  // 3 = חשבונית מס קבלה (most common for e-commerce)
+  const payload = {
+    terminal_name: 'your_terminal',
+    document_date: today,
+    document_type: 'IR',           // חשבונית מס קבלה
+    action: 1,                     // 1 = Debit (חיוב)
+    document_language: 'heb',
+    document_currency_code: 'ILS',
+    vat_percent: 17,
+    response_language: 'heb',
 
-  // ... other fields ...
-};
+    // Client details
+    client_name: order.customerName,
+    client_email: order.customerEmail,
+    client_address_line_1: order.shippingAddress,
+    client_city: order.shippingCity,
+    client_country_code: 'IL',
+
+    // Items - MUST match total payment amount
+    items: order.items.map((item, index) => ({
+      type: 'I',
+      code: `${order.orderNumber}-${index + 1}`,
+      name: item.productName,
+      price_type: 'G',             // Gross (כולל מע"מ)
+      unit_price: item.pricePerUnit,
+      units_number: item.quantity,
+      unit_type: 1,
+      currency_code: 'ILS',
+      to_doc_currency_exchange_rate: 1,
+    })),
+
+    // Payments - MUST match items total
+    payments: [{
+      payment_method: 1,           // 1 = Credit card
+      payment_date: today,
+      amount: order.total,
+      currency_code: 'ILS',
+      to_doc_currency_exchange_rate: 1,
+      cc_last_4_digits: callbackData.ccno,  // From IPN
+      cc_credit_term: 1,
+      cc_brand: 1,
+    }],
+
+    created_by_system: 'Your Website',
+  };
+
+  const response = await fetch(
+    'https://billing5.tranzila.com/api/documents_db/create_document',
+    {
+      method: 'POST',
+      headers: generateAuthHeaders(),  // Same auth as Payment API
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const data = await response.json();
+
+  if (data.status_code === 0) {
+    // Success!
+    return {
+      documentId: data.document.id,
+      documentNumber: data.document.number,
+      retrievalKey: data.document.retrieval_key,
+    };
+  }
+
+  throw new Error(data.status_msg);
+}
 ```
 
-#### How It Works
+#### Payment Methods for Invoices
 
-1. Customer completes payment on Tranzila page
-2. On successful payment (Response === '000'), Tranzila auto-generates the document
-3. Document is available in Tranzila merchant dashboard
-4. If `send_email` is configured, document link may be included in payment confirmation
+| Code | Method |
+|------|--------|
+| 1 | Credit Card |
+| 3 | Cheque |
+| 4 | Bank Transfer |
+| 5 | Cash |
+| 6 | PayPal |
+| 10 | Other |
 
-#### Requirements
+#### Successful Response
 
-- **Business Registration** - Must have עוסק מורשה status for tax invoices
-- **VAT Settings** - `request_vat: 17` (Israeli VAT 17%)
-- **Client Details** - For proper invoicing, provide complete client info:
-  ```typescript
-  client: {
-    name: 'Customer Name',
-    id: '123456789',  // Israeli ID (ת.ז.)
-    email: 'customer@email.com',
-    // address fields if needed
+```json
+{
+  "status_code": 0,
+  "status_msg": "הצלחה",
+  "enquiry_key": "69fe6519",
+  "document": {
+    "id": "1",
+    "number": "30001",
+    "total_charge_amount": 299,
+    "currency": "ILS",
+    "created_at": "2025-12-02 20:29:35",
+    "retrieval_key": "xxxxx..."
   }
-  ```
+}
+```
 
-#### Viewing Documents
+#### Viewing Invoice PDF
 
-1. Log into Tranzila dashboard
-2. Go to "מסמכים" or "תיעוד"
-3. Find document by transaction ID or date
+```
+GET https://my.tranzila.com/api/get_financial_document/{retrieval_key}
+```
 
-#### Notes
+Returns PDF document directly.
 
-- Document generation is handled entirely by Tranzila - no additional code needed
-- Documents are stored in Tranzila's system
-- For accounting integration, export from Tranzila dashboard
-- If document not generated, check Tranzila dashboard settings
+#### Common Errors
+
+| Code | Issue | Solution |
+|------|-------|----------|
+| 10007 | Document base number not found | Configure document numbering in Tranzila dashboard |
+| 10008 | Items total differs from Payments total | Ensure items sum = payments amount |
+| 10300 | Failed to create document | Check all required fields |
+| 10301 | Terminal settings not found | Contact Tranzila support |
+
+#### When to Create Invoice
+
+Add invoice creation to your IPN callback, AFTER updating order status:
+
+```typescript
+// In tranzila-callback route.ts
+
+// 1. Verify payment
+// 2. Update order to PAID
+// 3. Create invoice
+const invoiceResult = await tranzila.createInvoice({
+  customerName: order.customerName,
+  customerEmail: order.customerEmail,
+  items: order.items,
+  amount: order.total,
+  ccLastDigits: callbackData.ccno,
+});
+
+if (invoiceResult.success) {
+  // Save invoice number to order
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { invoiceNumber: invoiceResult.documentNumber },
+  });
+}
+
+// 4. Send notifications (email, SMS)
+```
+
+#### Key Points
+
+- Invoice is sent automatically to `client_email`
+- Items total MUST equal payments total exactly
+- Store `invoiceNumber` in your order for reference
+- Call AFTER payment verification, not before
+- Use same auth headers as Payment Request API
 
 ---
 
@@ -802,6 +920,104 @@ const order = await prisma.order.findUnique({
 });
 ```
 
+### 9. Tranzila 401 Unauthorized with "user": "diego4"
+
+**Problem:** API returns `{"code": 401, "message": "Unauthorized", "user": "diego4"}`.
+
+**Causes:**
+- Environment variables have trailing whitespace or newlines (common with copy-paste!)
+- Wrong API keys
+
+**Solution:** ALWAYS trim environment variables:
+```typescript
+constructor() {
+  this.apiHost = (process.env.TRANZILA_API_HOST || 'https://api.tranzila.com').trim();
+  this.terminalName = (process.env.TRANZILA_TERMINAL_NAME || '').trim();
+  this.appKey = (process.env.TRANZILA_PUBLIC_KEY || '').trim();
+  this.secret = (process.env.TRANZILA_PRIVATE_KEY || '').trim();
+}
+```
+
+### 10. Invoice create_document Not Working
+
+**Problem:** Sending `create_document: true` and `document_type: 3` in Payment Request doesn't generate invoice.
+
+**Solution:** This is a Tranzila limitation. Use the separate **Invoices API** at `billing5.tranzila.com`:
+```typescript
+// After successful payment, call:
+POST https://billing5.tranzila.com/api/documents_db/create_document
+```
+
+See section "Invoice/Receipt Generation (Invoices API)" above for full details.
+
+### 11. Abandoned Orders Cluttering Database
+
+**Problem:** Test orders or abandoned checkouts stay as PENDING_PAYMENT forever.
+
+**Solution:** Add a cron job to clean them up:
+```typescript
+// app/api/cron/cleanup-orders/route.ts
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+  const result = await prisma.order.deleteMany({
+    where: {
+      status: 'PENDING_PAYMENT',
+      createdAt: { lt: twoHoursAgo },
+    },
+  });
+
+  return Response.json({ deleted: result.count });
+}
+```
+
+Add to `vercel.json`:
+```json
+{
+  "crons": [{
+    "path": "/api/cron/cleanup-orders",
+    "schedule": "0 * * * *"
+  }]
+}
+```
+
+### 12. Self-Pickup Validation Failing
+
+**Problem:** Zod schema requires address fields even when shipping method is "self-pickup".
+
+**Solution:** Use `superRefine` for conditional validation:
+```typescript
+const shippingFormSchema = z.object({
+  shippingMethod: z.enum(["STANDARD_DELIVERY", "SELF_PICKUP"]),
+  shippingAddress: z.string().optional().or(z.literal("")),
+  shippingCity: z.string().optional().or(z.literal("")),
+  shippingPostalCode: z.string().optional().or(z.literal("")),
+}).superRefine((data, ctx) => {
+  if (data.shippingMethod === "STANDARD_DELIVERY") {
+    if (!data.shippingAddress || data.shippingAddress.length < 5) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "כתובת חייבת להכיל לפחות 5 תווים",
+        path: ["shippingAddress"],
+      });
+    }
+    // ... validate other fields
+  }
+});
+```
+
+And add fallback defaults when saving:
+```typescript
+shippingAddress: data.shippingAddress || "איסוף עצמי",
+shippingCity: data.shippingCity || "באר שבע",
+shippingPostalCode: data.shippingPostalCode || "0000000",
+```
+
 ---
 
 ## Information to Request from Client
@@ -846,7 +1062,7 @@ For emails to work properly:
 ```
 project/
 ├── lib/
-│   ├── tranzila.ts           # Tranzila SDK class
+│   ├── tranzila.ts           # Tranzila SDK class (payments + invoices)
 │   ├── sendmsg.ts            # SendMsg API client
 │   ├── sms-templates.ts      # SMS message templates
 │   ├── resend.ts             # Email sending functions
@@ -859,10 +1075,20 @@ project/
 │   └── admin-order-notification.tsx
 ├── app/api/
 │   ├── orders/
-│   │   └── route.ts          # Create order
-│   └── payment/
-│       └── tranzila-callback/
-│           └── route.ts      # Payment IPN handler
+│   │   └── route.ts          # Create order + payment request
+│   ├── payment/
+│   │   └── tranzila-callback/
+│   │       └── route.ts      # Payment IPN handler + invoice creation
+│   └── cron/
+│       └── cleanup-orders/
+│           └── route.ts      # Cleanup PENDING_PAYMENT orders
+├── scripts/
+│   ├── test-tranzila-invoice.ts      # Test payment request creation
+│   └── test-tranzila-create-invoice.ts  # Test invoice creation
+├── docs/
+│   ├── INTEGRATION-GUIDE.md  # This file
+│   └── tranzila-ipn-verification.md  # Tranzila-specific documentation
+├── vercel.json               # Cron job configuration
 └── .env.local                # Environment variables
 ```
 
@@ -873,15 +1099,17 @@ project/
 - [ ] Get Tranzila credentials from client
 - [ ] Get SendMsg credentials from client
 - [ ] Set up Resend account and verify domain
-- [ ] Add all environment variables
+- [ ] Add all environment variables (remove trailing whitespace/newlines!)
 - [ ] Create payment callback route
 - [ ] Create email templates (RTL!)
-- [ ] Create SMS templates (short!)
+- [ ] Create SMS templates (short - under 70 chars for Hebrew!)
 - [ ] Implement notification service
 - [ ] Test payment flow end-to-end
+- [ ] Test invoice creation via Invoices API
 - [ ] Test SMS delivery
 - [ ] Test email delivery (check spam)
 - [ ] Verify production callback URL is reachable
+- [ ] Add cleanup cron job for abandoned orders
 
 ---
 
