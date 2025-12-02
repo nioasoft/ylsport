@@ -111,16 +111,23 @@ export async function sendOrderConfirmationEmail(
     const config = getEmailConfig();
     console.log("Email config - from:", config.from);
     console.log("Email config - replyTo:", config.replyTo);
-    console.log("Email env - RESEND_FROM_EMAIL:", process.env.RESEND_FROM_EMAIL);
-    console.log("Email env - RESEND_REPLY_TO_EMAIL:", process.env.RESEND_REPLY_TO_EMAIL);
+    console.log("Email config - replyTo length:", config.replyTo?.length);
+    console.log("Email config - replyTo charCodes:", config.replyTo ? [...config.replyTo].map(c => c.charCodeAt(0)).join(',') : 'undefined');
 
-    const result = await resend.emails.send({
+    // Only include reply_to if it's a valid non-empty string
+    const emailPayload: Parameters<typeof resend.emails.send>[0] = {
       from: config.from,
       to: data.to,
-      reply_to: config.replyTo,
       subject: `אישור הזמנה ${data.orderNumber} - YL Sport`,
       react: OrderConfirmationEmail(data),
-    });
+    };
+
+    // Add reply_to only if valid
+    if (config.replyTo && config.replyTo.trim() && config.replyTo.includes('@')) {
+      emailPayload.reply_to = config.replyTo.trim();
+    }
+
+    const result = await resend.emails.send(emailPayload);
 
     if (result.error) {
       console.error("Resend error:", result.error);
