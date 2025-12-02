@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
         items: {
           create: data.items.map((item) => ({
             productName: item.productName,
-            productSize: item.productSize,
+            // Convert "One Size" to Prisma enum value "ONE_SIZE"
+            productSize: item.productSize === "One Size" ? "ONE_SIZE" : item.productSize,
             quantity: item.quantity,
             pricePerUnit: item.pricePerUnit,
             totalPrice: item.totalPrice,

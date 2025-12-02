@@ -107,10 +107,11 @@ model Order {
 // ============================================================================
 
 enum ProductSize {
-  S    // Small
-  M    // Medium
-  L    // Large
-  XL   // Extra Large
+  ONE_SIZE  // One Size (מידה אחת)
+  S         // Small
+  M         // Medium
+  L         // Large
+  XL        // Extra Large
 
   @@map("product_size")
 }

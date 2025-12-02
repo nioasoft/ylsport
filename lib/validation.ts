@@ -49,7 +49,7 @@ export type ShippingFormData = z.infer<typeof shippingFormSchema>;
 // PRODUCT SELECTION VALIDATION
 // ============================================================================
 
-export const productSizeSchema = z.enum(["One Size", "S", "M", "L", "XL"], {
+export const productSizeSchema = z.enum(["ONE_SIZE", "One Size", "S", "M", "L", "XL"], {
   message: "אנא בחר מידה תקינה",
 });
 
