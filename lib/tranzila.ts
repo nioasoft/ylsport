@@ -177,8 +177,11 @@ export class TranzilaSDK {
     ];
 
     // Build the IPN URL for payment callbacks
+    // Always use production URL for IPN - Tranzila can't reach localhost
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yl-sport.co.il';
-    const ipnUrl = `${siteUrl}/api/payment/tranzila-callback`;
+    const ipnUrl = siteUrl.includes('localhost')
+      ? 'https://www.yl-sport.co.il/api/payment/tranzila-callback'
+      : `${siteUrl}/api/payment/tranzila-callback`;
 
     // Prepare payload according to Tranzila API format
     const payload: Record<string, unknown> = {

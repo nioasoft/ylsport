@@ -111,9 +111,9 @@ async function processCallback(data: Record<string, unknown>) {
 
   const callbackData = validationResult.data;
 
-  // Get order from database using order_id (our order number)
+  // Get order from database using tranzilaPaymentId (pr_id from Tranzila)
   const order = await prisma.order.findUnique({
-    where: { orderNumber: callbackData.order_id },
+    where: { tranzilaPaymentId: callbackData.pr_id },
     include: {
       items: true,
       discountCode: true,
@@ -121,12 +121,14 @@ async function processCallback(data: Record<string, unknown>) {
   });
 
   if (!order) {
-    console.error("Order not found:", callbackData.order_id);
+    console.error("Order not found for pr_id:", callbackData.pr_id);
     return NextResponse.json(
       { success: false, message: "Order not found" },
       { status: 404 }
     );
   }
+
+  console.log("Found order:", order.orderNumber, "for pr_id:", callbackData.pr_id);
 
   // Check if order is already paid (prevent duplicate processing)
   if (order.paymentStatus === "COMPLETED") {

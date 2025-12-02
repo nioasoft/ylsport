@@ -253,18 +253,20 @@ export const tranzilaCallbackSchema = z.object({
   // Tranzila callback parameters
   Response: z.string(), // "000" = success, other codes = failure
   ConfirmationCode: z.string().optional(), // Transaction confirmation code
-  order_id: z.string(), // Our order number (sent as order_id)
+  pr_id: z.string(), // Payment request ID from Tranzila
   sum: z.coerce.number(), // Payment amount
   currency: z.string().optional().default("1"), // Currency code (1 = ILS)
   index: z.string().optional(), // Tranzila transaction index
   // Additional fields that may be returned
-  card: z.string().optional(), // Last 4 digits of card
+  ccno: z.string().optional(), // Last 4 digits of card
   expmonth: z.string().optional(),
   expyear: z.string().optional(),
   cardtype: z.string().optional(),
   cardissuer: z.string().optional(),
   cardaquirer: z.string().optional(),
-  Rone: z.string().optional(), // Hebrew response message
+  contact: z.string().optional(), // Customer name
+  email: z.string().optional(), // Customer email
+  phone: z.string().optional(), // Customer phone
   // Allow additional unknown fields
 }).passthrough();
 

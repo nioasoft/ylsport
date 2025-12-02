@@ -79,7 +79,7 @@ async function createTestOrder() {
   }
 }
 
-async function createPaymentForOrder(orderNumber: string, total: number, customerName: string, customerEmail: string, customerPhone: string) {
+async function createPaymentForOrder(orderId: string, orderNumber: string, total: number, customerName: string, customerEmail: string, customerPhone: string) {
   console.log("\n" + "=".repeat(60));
   console.log("Creating Tranzila Payment Request");
   console.log("=".repeat(60));
@@ -87,7 +87,8 @@ async function createPaymentForOrder(orderNumber: string, total: number, custome
   const { getTranzilaSDK } = await import("../lib/tranzila");
   const tranzila = getTranzilaSDK();
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.yl-sport.co.il";
+  // Always use production URL for testing (IPN callback must be accessible)
+  const siteUrl = "https://www.yl-sport.co.il";
 
   const result = await tranzila.createPayment({
     amount: total,
@@ -101,10 +102,20 @@ async function createPaymentForOrder(orderNumber: string, total: number, custome
     product_name: "הזמנה מ-YL Sport",
   });
 
-  if (result.success) {
+  if (result.success && result.transaction_id) {
     console.log("\n✅ Payment request created:");
     console.log(`   Tranzila PR ID: ${result.transaction_id}`);
     console.log(`   Payment URL: ${result.payment_url}`);
+
+    // Update order with Tranzila pr_id
+    const { PrismaClient } = await import("@prisma/client");
+    const prisma = new PrismaClient();
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { tranzilaPaymentId: result.transaction_id },
+    });
+    await prisma.$disconnect();
+    console.log(`   ✅ Order updated with pr_id: ${result.transaction_id}`);
   } else {
     console.log("\n❌ Failed to create payment:");
     console.log(`   Error: ${result.error}`);
@@ -121,6 +132,7 @@ async function main() {
 
   // Step 2: Create payment request
   const payment = await createPaymentForOrder(
+    order.id,
     order.orderNumber,
     Number(order.total),
     order.customerName,

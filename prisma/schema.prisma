@@ -82,6 +82,9 @@ model Order {
   paymentStatus      PaymentStatus  @default(PENDING)
   trackingNumber     String?        // Nullable until shipped
 
+  // Payment Reference
+  tranzilaPaymentId  String?        @unique // Tranzila pr_id for callback matching
+
   // Relationships
   items              OrderItem[]
   discountCode       DiscountCode?  @relation(fields: [discountCodeId], references: [id])
