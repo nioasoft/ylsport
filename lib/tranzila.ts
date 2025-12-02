@@ -230,6 +230,8 @@ export class TranzilaSDK {
       // Document/Receipt settings - enable automatic receipt
       create_document: true,
       document_type: 'receipt', // קבלה
+      // Payment label - this is the merchant name shown on the payment page
+      payment_label: 'YL Sport',
     };
 
     const headers = this.generateAuthHeaders();

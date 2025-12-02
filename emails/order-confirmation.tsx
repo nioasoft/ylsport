@@ -201,12 +201,14 @@ const main = {
   backgroundColor: "#f6f9fc",
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  direction: "rtl" as const,
 };
 
 const container = {
   margin: "0 auto",
   padding: "20px 0 48px",
   maxWidth: "600px",
+  direction: "rtl" as const,
 };
 
 const header = {
@@ -309,7 +311,7 @@ const itemMeta = {
 };
 
 const itemPrice = {
-  textAlign: "left" as const,
+  textAlign: "right" as const,
   verticalAlign: "top" as const,
   width: "100px",
 };
@@ -341,7 +343,7 @@ const summaryLabel = {
 };
 
 const summaryValue = {
-  textAlign: "left" as const,
+  textAlign: "right" as const,
   width: "120px",
 };
 
