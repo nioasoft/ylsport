@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTranzilaSDK } from "@/lib/tranzila";
 import { sendOrderConfirmationEmail, sendAdminOrderNotificationEmail } from "@/lib/resend";
-import { sendOrderConfirmationSMS } from "@/lib/sms-templates";
+import { sendOrderConfirmationSMSAsync } from "@/lib/sms-templates";
 import { tranzilaCallbackSchema } from "@/lib/validation";
 
 /**
@@ -237,9 +237,13 @@ async function processCallback(data: Record<string, unknown>) {
       console.error("Failed to send admin notification:", err);
     }),
 
-    // Send SMS confirmation to customer
+    // Send SMS confirmation to customer (using async version that waits for result)
     (async () => {
-      const smsResult = sendOrderConfirmationSMS({
+      console.log("Attempting to send SMS to:", updatedOrder.customerPhone);
+      console.log("SMS env check - SITE_ID exists:", !!process.env.SENDMSG_SITE_ID);
+      console.log("SMS env check - API_PASSWORD exists:", !!process.env.SENDMSG_API_PASSWORD);
+
+      const smsResult = await sendOrderConfirmationSMSAsync({
         phone: updatedOrder.customerPhone,
         orderNumber: updatedOrder.orderNumber,
         customerName: updatedOrder.customerName,
@@ -247,9 +251,9 @@ async function processCallback(data: Record<string, unknown>) {
       });
 
       if (smsResult.success) {
-        console.log("Order confirmation SMS sent to:", updatedOrder.customerPhone);
+        console.log("Order confirmation SMS sent successfully to:", updatedOrder.customerPhone);
       } else {
-        console.error("Failed to send SMS:", smsResult.error);
+        console.error("Failed to send order confirmation SMS:", smsResult.error);
       }
     })(),
   ]);

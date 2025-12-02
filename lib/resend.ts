@@ -109,6 +109,11 @@ export async function sendOrderConfirmationEmail(
     const { OrderConfirmationEmail } = await import("@/emails/order-confirmation");
 
     const config = getEmailConfig();
+    console.log("Email config - from:", config.from);
+    console.log("Email config - replyTo:", config.replyTo);
+    console.log("Email env - RESEND_FROM_EMAIL:", process.env.RESEND_FROM_EMAIL);
+    console.log("Email env - RESEND_REPLY_TO_EMAIL:", process.env.RESEND_REPLY_TO_EMAIL);
+
     const result = await resend.emails.send({
       from: config.from,
       to: data.to,
