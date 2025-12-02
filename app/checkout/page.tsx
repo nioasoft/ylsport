@@ -15,7 +15,7 @@ interface OrderItem {
 
 type CheckoutStep = "order" | "shipping" | "processing";
 
-const PRODUCT_PRICE = 299;
+const PRODUCT_PRICE = 1; // TEST MODE - change back to 299 for production
 const PRODUCT_NAME = "YL Sport Tights";
 
 export default function CheckoutPage() {
