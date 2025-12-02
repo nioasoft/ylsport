@@ -236,6 +236,126 @@ const TRANZILA_RESPONSE_CODES: Record<string, string> = {
 10. Customer redirected to success_url
 ```
 
+### Apple Pay Integration
+
+Apple Pay is supported through Tranzila's payment page. No code changes required in your application - it works automatically on the Tranzila payment page.
+
+#### Requirements
+
+1. **Domain Verification File** - Apple requires a verification file on your domain
+2. **Tranzila Approval** - Tranzila must approve your domain for Apple Pay
+
+#### Setup Steps
+
+1. **Download verification file:**
+   ```bash
+   curl -sL "https://api.tranzila.com/assets/apple_pay/merchant_authentication_file.zip" -o /tmp/apple_pay_file.zip
+   unzip /tmp/apple_pay_file.zip -d public/.well-known/
+   ```
+
+2. **Deploy to make file accessible:**
+   The file must be accessible at:
+   ```
+   https://yourdomain.com/.well-known/apple-developer-merchantid-domain-association
+   ```
+
+3. **Verify file is accessible:**
+   ```bash
+   curl -sI "https://yourdomain.com/.well-known/apple-developer-merchantid-domain-association"
+   # Should return HTTP 200
+   ```
+
+4. **Contact Tranzila Support:**
+   Email Tranzila to approve your domain for Apple Pay:
+   - Subject: "הפעלת Apple Pay לדומיין [yourdomain.com]"
+   - Include: Terminal name, domain, confirmation that verification file is deployed
+
+#### How It Works
+
+- Apple Pay button appears **automatically** on Tranzila payment page
+- Only visible on supported devices (iPhone, iPad, Mac with Touch ID/Face ID)
+- No additional integration code needed
+- Payment flow remains the same
+
+#### Key Files
+
+- `public/.well-known/apple-developer-merchantid-domain-association` - Apple verification file
+
+#### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Apple Pay button not showing | Only shows on supported Apple devices |
+| 404 on verification file | Verify file exists in `public/.well-known/` and deployed |
+| File accessible but Apple Pay not working | Contact Tranzila - they need to approve your domain |
+
+#### Documentation
+
+- Tranzila Apple Pay Guide: https://docs.tranzila.com/docs/payments-billing/795m2yi7q4nmq-iframe-integration
+- Apple Pay on the Web: https://developer.apple.com/documentation/apple_pay_on_the_web
+
+### Automatic Document Generation (Invoices/Receipts)
+
+Tranzila can automatically generate documents (invoices, receipts) after successful payment.
+
+#### Document Types
+
+| Code | Type | Hebrew |
+|------|------|--------|
+| 1 | Receipt | קבלה |
+| 2 | Tax Invoice | חשבונית מס |
+| 3 | Tax Invoice Receipt | חשבונית מס קבלה |
+
+#### Configuration
+
+In the payment request payload:
+
+```typescript
+const payload = {
+  // ... other fields ...
+
+  // Enable automatic document generation
+  create_document: true,
+  document_type: 3,  // 3 = חשבונית מס קבלה (most common for e-commerce)
+
+  // ... other fields ...
+};
+```
+
+#### How It Works
+
+1. Customer completes payment on Tranzila page
+2. On successful payment (Response === '000'), Tranzila auto-generates the document
+3. Document is available in Tranzila merchant dashboard
+4. If `send_email` is configured, document link may be included in payment confirmation
+
+#### Requirements
+
+- **Business Registration** - Must have עוסק מורשה status for tax invoices
+- **VAT Settings** - `request_vat: 17` (Israeli VAT 17%)
+- **Client Details** - For proper invoicing, provide complete client info:
+  ```typescript
+  client: {
+    name: 'Customer Name',
+    id: '123456789',  // Israeli ID (ת.ז.)
+    email: 'customer@email.com',
+    // address fields if needed
+  }
+  ```
+
+#### Viewing Documents
+
+1. Log into Tranzila dashboard
+2. Go to "מסמכים" or "תיעוד"
+3. Find document by transaction ID or date
+
+#### Notes
+
+- Document generation is handled entirely by Tranzila - no additional code needed
+- Documents are stored in Tranzila's system
+- For accounting integration, export from Tranzila dashboard
+- If document not generated, check Tranzila dashboard settings
+
 ---
 
 ## SendMsg SMS Service
