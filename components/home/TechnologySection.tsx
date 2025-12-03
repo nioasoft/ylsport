@@ -156,12 +156,12 @@ export function TechnologySection() {
               <h3 className="text-xl font-bold text-center mb-6">הרכב הבד המתקדם</h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="text-center">
-                  <div className="mb-2 text-3xl font-bold text-primary">88%</div>
+                  <div className="mb-2 text-3xl font-bold text-primary">75%</div>
                   <p className="text-sm font-semibold text-gray-900">פוליאסטר איכותי</p>
                   <p className="text-xs text-gray-700 mt-1">לעמידות, ייבוש מהיר ושמירה על צורה</p>
                 </div>
                 <div className="text-center">
-                  <div className="mb-2 text-3xl font-bold text-primary">12%</div>
+                  <div className="mb-2 text-3xl font-bold text-primary">25%</div>
                   <p className="text-sm font-semibold text-gray-900">ספנדקס גמיש</p>
                   <p className="text-xs text-gray-700 mt-1">למתיחה מושלמת ונוחות מקסימלית</p>
                 </div>
