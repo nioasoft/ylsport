@@ -17,11 +17,6 @@ import { OrderStatusUpdateEmailData } from "@/lib/resend";
  * Shipping notification with tracking number
  */
 export function OrderStatusUpdateEmail(data: OrderStatusUpdateEmailData) {
-  // Israel Post tracking URL (adjust based on actual shipping provider)
-  const trackingUrl = data.trackingNumber
-    ? `https://www.israelpost.co.il/itemtrace.nsf/mainsearch?openform&lang=he&itemcode=${data.trackingNumber}`
-    : "";
-
   return (
     <Html dir="rtl" lang="he">
       <Head />
@@ -52,11 +47,6 @@ export function OrderStatusUpdateEmail(data: OrderStatusUpdateEmailData) {
               <Section style={trackingBox}>
                 <Text style={trackingLabel}>מספר מעקב:</Text>
                 <Text style={trackingNumber}>{data.trackingNumber}</Text>
-                {trackingUrl && (
-                  <Link href={trackingUrl} style={trackingButton}>
-                    עקוב אחר המשלוח
-                  </Link>
-                )}
               </Section>
             )}
 
@@ -161,17 +151,6 @@ const trackingNumber = {
   fontFamily: "monospace",
   letterSpacing: "2px",
   margin: "0 0 16px",
-};
-
-const trackingButton = {
-  backgroundColor: "#e87f93",
-  color: "#ffffff",
-  padding: "12px 32px",
-  borderRadius: "6px",
-  textDecoration: "none",
-  display: "inline-block",
-  fontWeight: "600",
-  fontSize: "16px",
 };
 
 const hr = {
