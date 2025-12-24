@@ -60,8 +60,7 @@ export async function POST(request: NextRequest) {
         items: {
           create: data.items.map((item) => ({
             productName: item.productName,
-            // Convert "One Size" to Prisma enum value "ONE_SIZE"
-            productSize: item.productSize === "One Size" ? "ONE_SIZE" : item.productSize,
+            productSize: item.productSize,
             quantity: item.quantity,
             pricePerUnit: item.pricePerUnit,
             totalPrice: item.totalPrice,
@@ -75,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     // Create Tranzila payment
     const tranzila = getTranzilaSDK();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.yl-sport.co.il';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.yl-sport.co.il";
 
     const paymentResponse = await tranzila.createPayment({
       amount: order.total.toNumber(),
@@ -113,10 +112,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "אירעה שגיאה ביצירת ההזמנה",
+        message: error instanceof Error ? error.message : "אירעה שגיאה ביצירת ההזמנה",
       },
       { status: 500 }
     );
@@ -165,10 +161,7 @@ export async function GET(request: NextRequest) {
     // Admin list view - requires authentication
     const session = await getAdminSession();
     if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get filter parameters

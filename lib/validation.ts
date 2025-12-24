@@ -7,77 +7,63 @@ import { z } from "zod";
 const hebrewNameRegex = /^[\u0590-\u05FF\s'-]+$/;
 const phoneRegex = /^0(5[0-9]|[2-4]|[8-9])[0-9]{7}$/; // Israeli phone format
 
-export const shippingFormSchema = z.object({
-  customerName: z
-    .string()
-    .min(2, "שם חייב להכיל לפחות 2 תווים")
-    .max(100, "שם ארוך מדי")
-    .regex(hebrewNameRegex, "השם חייב להיות בעברית בלבד"),
+export const shippingFormSchema = z
+  .object({
+    customerName: z
+      .string()
+      .min(2, "שם חייב להכיל לפחות 2 תווים")
+      .max(100, "שם ארוך מדי")
+      .regex(hebrewNameRegex, "השם חייב להיות בעברית בלבד"),
 
-  customerEmail: z
-    .string()
-    .email("כתובת אימייל לא תקינה")
-    .max(255, "כתובת אימייל ארוכה מדי"),
+    customerEmail: z.string().email("כתובת אימייל לא תקינה").max(255, "כתובת אימייל ארוכה מדי"),
 
-  customerPhone: z
-    .string()
-    .regex(phoneRegex, "מספר טלפון לא תקין (נדרש פורמט ישראלי)"),
+    customerPhone: z.string().regex(phoneRegex, "מספר טלפון לא תקין (נדרש פורמט ישראלי)"),
 
-  // Address fields - optional for self-pickup, required for delivery
-  shippingAddress: z
-    .string()
-    .max(200, "כתובת ארוכה מדי")
-    .optional()
-    .or(z.literal("")),
+    // Address fields - optional for self-pickup, required for delivery
+    shippingAddress: z.string().max(200, "כתובת ארוכה מדי").optional().or(z.literal("")),
 
-  shippingCity: z
-    .string()
-    .max(100, "שם עיר ארוך מדי")
-    .optional()
-    .or(z.literal("")),
+    shippingCity: z.string().max(100, "שם עיר ארוך מדי").optional().or(z.literal("")),
 
-  shippingPostalCode: z
-    .string()
-    .optional()
-    .or(z.literal("")),
+    shippingPostalCode: z.string().optional().or(z.literal("")),
 
-  shippingMethod: z.enum(["STANDARD_DELIVERY", "SELF_PICKUP"], {
-    message: "אנא בחר שיטת משלוח תקינה",
-  }),
-}).superRefine((data, ctx) => {
-  // If delivery method selected, address fields are required
-  if (data.shippingMethod === "STANDARD_DELIVERY") {
-    if (!data.shippingAddress || data.shippingAddress.length < 5) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "כתובת חייבת להכיל לפחות 5 תווים",
-        path: ["shippingAddress"],
-      });
+    shippingMethod: z.enum(["STANDARD_DELIVERY", "SELF_PICKUP"], {
+      message: "אנא בחר שיטת משלוח תקינה",
+    }),
+  })
+  .superRefine((data, ctx) => {
+    // If delivery method selected, address fields are required
+    if (data.shippingMethod === "STANDARD_DELIVERY") {
+      if (!data.shippingAddress || data.shippingAddress.length < 5) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "כתובת חייבת להכיל לפחות 5 תווים",
+          path: ["shippingAddress"],
+        });
+      }
+
+      if (!data.shippingCity || data.shippingCity.length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "שם עיר חייב להכיל לפחות 2 תווים",
+          path: ["shippingCity"],
+        });
+      } else if (!hebrewNameRegex.test(data.shippingCity)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "שם העיר חייב להיות בעברית בלבד",
+          path: ["shippingCity"],
+        });
+      }
+
+      if (!data.shippingPostalCode || !/^\d{7}$/.test(data.shippingPostalCode)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "מיקוד חייב להכיל 7 ספרות",
+          path: ["shippingPostalCode"],
+        });
+      }
     }
-
-    if (!data.shippingCity || data.shippingCity.length < 2) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "שם עיר חייב להכיל לפחות 2 תווים",
-        path: ["shippingCity"],
-      });
-    } else if (!hebrewNameRegex.test(data.shippingCity)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "שם העיר חייב להיות בעברית בלבד",
-        path: ["shippingCity"],
-      });
-    }
-
-    if (!data.shippingPostalCode || !/^\d{7}$/.test(data.shippingPostalCode)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "מיקוד חייב להכיל 7 ספרות",
-        path: ["shippingPostalCode"],
-      });
-    }
-  }
-});
+  });
 
 export type ShippingFormData = z.infer<typeof shippingFormSchema>;
 
@@ -85,8 +71,8 @@ export type ShippingFormData = z.infer<typeof shippingFormSchema>;
 // PRODUCT SELECTION VALIDATION
 // ============================================================================
 
-export const productSizeSchema = z.enum(["ONE_SIZE", "One Size", "S", "M", "L", "XL"], {
-  message: "אנא בחר מידה תקינה",
+export const productSizeSchema = z.enum(["S", "M", "L", "XL"], {
+  message: "אנא בחרי מידה תקינה",
 });
 
 export const productQuantitySchema = z
@@ -163,10 +149,7 @@ export const adminLoginSchema = z.object({
     .max(50, "שם משתמש ארוך מדי")
     .regex(/^[a-zA-Z0-9_]+$/, "שם משתמש יכול להכיל רק אותיות אנגליות, מספרים וקו תחתון"),
 
-  password: z
-    .string()
-    .min(8, "סיסמה חייבת להכיל לפחות 8 תווים")
-    .max(100, "סיסמה ארוכה מדי"),
+  password: z.string().min(8, "סיסמה חייבת להכיל לפחות 8 תווים").max(100, "סיסמה ארוכה מדי"),
 });
 
 export type AdminLoginData = z.infer<typeof adminLoginSchema>;
@@ -175,48 +158,47 @@ export type AdminLoginData = z.infer<typeof adminLoginSchema>;
 // ADMIN DISCOUNT CODE MANAGEMENT
 // ============================================================================
 
-export const createDiscountCodeSchema = z.object({
-  code: z
-    .string()
-    .min(3, "קוד הנחה חייב להכיל לפחות 3 תווים")
-    .max(50, "קוד הנחה ארוך מדי")
-    .regex(/^[A-Z0-9]+$/, "קוד הנחה חייב להכיל אותיות אנגליות גדולות ומספרים בלבד")
-    .transform((val) => val.toUpperCase()),
+export const createDiscountCodeSchema = z
+  .object({
+    code: z
+      .string()
+      .min(3, "קוד הנחה חייב להכיל לפחות 3 תווים")
+      .max(50, "קוד הנחה ארוך מדי")
+      .regex(/^[A-Z0-9]+$/, "קוד הנחה חייב להכיל אותיות אנגליות גדולות ומספרים בלבד")
+      .transform((val) => val.toUpperCase()),
 
-  type: z.enum(["PERCENTAGE", "FIXED_AMOUNT"], {
-    message: "סוג הנחה לא תקין",
-  }),
+    type: z.enum(["PERCENTAGE", "FIXED_AMOUNT"], {
+      message: "סוג הנחה לא תקין",
+    }),
 
-  value: z
-    .number()
-    .positive("ערך הנחה חייב להיות חיובי")
-    .refine((val) => val <= 100, "אחוז הנחה לא יכול לעבור 100%"),
+    value: z
+      .number()
+      .positive("ערך הנחה חייב להיות חיובי")
+      .refine((val) => val <= 100, "אחוז הנחה לא יכול לעבור 100%"),
 
-  validFrom: z.date().default(() => new Date()),
+    validFrom: z.date().default(() => new Date()),
 
-  validUntil: z.date(),
+    validUntil: z.date(),
 
-  usageLimit: z
-    .number()
-    .int("מגבלת שימוש חייבת להיות מספר שלם")
-    .positive("מגבלת שימוש חייבת להיות חיובית")
-    .nullable()
-    .optional(),
+    usageLimit: z
+      .number()
+      .int("מגבלת שימוש חייבת להיות מספר שלם")
+      .positive("מגבלת שימוש חייבת להיות חיובית")
+      .nullable()
+      .optional(),
 
-  minimumOrderValue: z
-    .number()
-    .nonnegative("ערך הזמנה מינימלי לא יכול להיות שלילי")
-    .nullable()
-    .optional(),
+    minimumOrderValue: z
+      .number()
+      .nonnegative("ערך הזמנה מינימלי לא יכול להיות שלילי")
+      .nullable()
+      .optional(),
 
-  isActive: z.boolean().default(true),
-}).refine(
-  (data) => data.validUntil > data.validFrom,
-  {
+    isActive: z.boolean().default(true),
+  })
+  .refine((data) => data.validUntil > data.validFrom, {
     message: "תאריך סיום חייב להיות אחרי תאריך התחלה",
     path: ["validUntil"],
-  }
-);
+  });
 
 export type CreateDiscountCodeData = z.infer<typeof createDiscountCodeSchema>;
 
@@ -225,14 +207,7 @@ export type CreateDiscountCodeData = z.infer<typeof createDiscountCodeSchema>;
 // ============================================================================
 
 export const updateOrderStatusSchema = z.object({
-  status: z.enum([
-    "PENDING_PAYMENT",
-    "PAID",
-    "PROCESSING",
-    "SHIPPED",
-    "DELIVERED",
-    "CANCELLED",
-  ], {
+  status: z.enum(["PENDING_PAYMENT", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"], {
     message: "סטטוס הזמנה לא תקין",
   }),
 
@@ -250,16 +225,11 @@ export type UpdateOrderStatusData = z.infer<typeof updateOrderStatusSchema>;
 // ============================================================================
 
 export const newsletterSubscriptionSchema = z.object({
-  email: z
-    .string()
-    .email("כתובת אימייל לא תקינה")
-    .max(255, "כתובת אימייל ארוכה מדי"),
+  email: z.string().email("כתובת אימייל לא תקינה").max(255, "כתובת אימייל ארוכה מדי"),
 
-  consent: z
-    .boolean()
-    .refine((val) => val === true, {
-      message: "חייב לאשר קבלת ניוזלטר",
-    }),
+  consent: z.boolean().refine((val) => val === true, {
+    message: "חייב לאשר קבלת ניוזלטר",
+  }),
 });
 
 export type NewsletterSubscriptionData = z.infer<typeof newsletterSubscriptionSchema>;
@@ -285,25 +255,27 @@ export type CardcomCallbackData = z.infer<typeof cardcomCallbackSchema>;
 // TRANZILA PAYMENT VALIDATION
 // ============================================================================
 
-export const tranzilaCallbackSchema = z.object({
-  // Tranzila callback parameters
-  Response: z.string(), // "000" = success, other codes = failure
-  ConfirmationCode: z.string().optional(), // Transaction confirmation code
-  pr_id: z.string(), // Payment request ID from Tranzila
-  sum: z.coerce.number(), // Payment amount
-  currency: z.string().optional().default("1"), // Currency code (1 = ILS)
-  index: z.string().optional(), // Tranzila transaction index
-  // Additional fields that may be returned
-  ccno: z.string().optional(), // Last 4 digits of card
-  expmonth: z.string().optional(),
-  expyear: z.string().optional(),
-  cardtype: z.string().optional(),
-  cardissuer: z.string().optional(),
-  cardaquirer: z.string().optional(),
-  contact: z.string().optional(), // Customer name
-  email: z.string().optional(), // Customer email
-  phone: z.string().optional(), // Customer phone
-  // Allow additional unknown fields
-}).passthrough();
+export const tranzilaCallbackSchema = z
+  .object({
+    // Tranzila callback parameters
+    Response: z.string(), // "000" = success, other codes = failure
+    ConfirmationCode: z.string().optional(), // Transaction confirmation code
+    pr_id: z.string(), // Payment request ID from Tranzila
+    sum: z.coerce.number(), // Payment amount
+    currency: z.string().optional().default("1"), // Currency code (1 = ILS)
+    index: z.string().optional(), // Tranzila transaction index
+    // Additional fields that may be returned
+    ccno: z.string().optional(), // Last 4 digits of card
+    expmonth: z.string().optional(),
+    expyear: z.string().optional(),
+    cardtype: z.string().optional(),
+    cardissuer: z.string().optional(),
+    cardaquirer: z.string().optional(),
+    contact: z.string().optional(), // Customer name
+    email: z.string().optional(), // Customer email
+    phone: z.string().optional(), // Customer phone
+    // Allow additional unknown fields
+  })
+  .passthrough();
 
 export type TranzilaCallbackData = z.infer<typeof tranzilaCallbackSchema>;
