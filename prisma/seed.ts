@@ -1,5 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { config } from "dotenv";
+
+config({ path: ".env.local" });
 
 const prisma = new PrismaClient();
 
@@ -26,12 +29,23 @@ async function main() {
 
   const discounts = [
     {
+      code: "YL10",
+      type: "PERCENTAGE" as const,
+      value: 10,
+      validFrom: new Date(),
+      validUntil: new Date("2099-12-31"),
+      usageLimit: null,
+      minimumOrderValue: null,
+      isActive: true,
+    },
+    {
       code: "LAUNCH50",
       type: "FIXED_AMOUNT" as const,
       value: 50,
       validFrom: new Date(),
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       usageLimit: 100,
+      minimumOrderValue: null,
       isActive: true,
     },
     {
@@ -40,7 +54,8 @@ async function main() {
       value: 10,
       validFrom: new Date(),
       validUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
-      usageLimit: null, // Unlimited
+      usageLimit: null,
+      minimumOrderValue: null,
       isActive: true,
     },
   ];

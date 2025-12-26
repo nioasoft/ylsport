@@ -19,6 +19,8 @@ import { formatPrice, getShippingMethodLabel } from "@/lib/utils";
 
 interface ShippingFormProps {
   subtotal: number;
+  discountCode?: string;
+  discountAmount?: number;
   onSubmit: (data: ShippingFormData) => void;
   onBack: () => void;
 }
@@ -38,7 +40,13 @@ const SHIPPING_METHODS = [
   },
 ];
 
-export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) {
+export function ShippingForm({
+  subtotal,
+  discountCode,
+  discountAmount,
+  onSubmit,
+  onBack,
+}: ShippingFormProps) {
   const [shippingMethod, setShippingMethod] = useState<"STANDARD_DELIVERY" | "SELF_PICKUP">(
     "STANDARD_DELIVERY"
   );
@@ -66,7 +74,7 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
   };
 
   const getTotal = () => {
-    return subtotal + getShippingCost();
+    return subtotal + getShippingCost() - (discountAmount || 0);
   };
 
   const onFormSubmit = (data: ShippingFormData) => {
@@ -99,9 +107,7 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
               className={errors.customerName ? "border-red-500" : ""}
             />
             {errors.customerName && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.customerName.message}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.customerName.message}</p>
             )}
           </div>
 
@@ -118,13 +124,9 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
               className={errors.customerEmail ? "border-red-500" : ""}
             />
             {errors.customerEmail && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.customerEmail.message}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.customerEmail.message}</p>
             )}
-            <p className="mt-1 text-xs text-gray-600">
-              נשלח אישור הזמנה למייל זה
-            </p>
+            <p className="mt-1 text-xs text-gray-600">נשלח אישור הזמנה למייל זה</p>
           </div>
 
           {/* Phone */}
@@ -140,13 +142,9 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
               className={errors.customerPhone ? "border-red-500" : ""}
             />
             {errors.customerPhone && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.customerPhone.message}
-              </p>
+              <p className="mt-1 text-sm text-red-500">{errors.customerPhone.message}</p>
             )}
-            <p className="mt-1 text-xs text-gray-600">
-              לעדכוני SMS על סטטוס ההזמנה
-            </p>
+            <p className="mt-1 text-xs text-gray-600">לעדכוני SMS על סטטוס ההזמנה</p>
           </div>
         </CardContent>
       </Card>
@@ -181,9 +179,7 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
                       {method.cost === 0 ? "חינם" : formatPrice(method.cost)}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {method.description}
-                  </p>
+                  <p className="mt-1 text-sm text-gray-600">{method.description}</p>
                 </div>
               </label>
             ))}
@@ -210,9 +206,7 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
                 className={errors.shippingAddress ? "border-red-500" : ""}
               />
               {errors.shippingAddress && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.shippingAddress.message}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors.shippingAddress.message}</p>
               )}
             </div>
 
@@ -228,9 +222,7 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
                 className={errors.shippingCity ? "border-red-500" : ""}
               />
               {errors.shippingCity && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.shippingCity.message}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors.shippingCity.message}</p>
               )}
             </div>
 
@@ -247,9 +239,7 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
                 className={errors.shippingPostalCode ? "border-red-500" : ""}
               />
               {errors.shippingPostalCode && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.shippingPostalCode.message}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors.shippingPostalCode.message}</p>
               )}
               <p className="mt-1 text-xs text-gray-600">
                 7 ספרות (ניתן לחפש{" "}
@@ -284,31 +274,25 @@ export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) 
               {getShippingCost() === 0 ? "חינם" : formatPrice(getShippingCost())}
             </span>
           </div>
+          {discountAmount && discountAmount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>הנחה ({discountCode}):</span>
+              <span className="font-semibold">-{formatPrice(discountAmount)}</span>
+            </div>
+          )}
           <div className="flex justify-between border-t pt-3 text-lg">
             <span className="font-bold">סה&quot;כ לתשלום:</span>
-            <span className="text-2xl font-bold text-primary">
-              {formatPrice(getTotal())}
-            </span>
+            <span className="text-2xl font-bold text-primary">{formatPrice(getTotal())}</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Action Buttons */}
       <div className="flex gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onBack}
-          className="flex-1"
-        >
+        <Button type="button" variant="outline" onClick={onBack} className="flex-1">
           חזור
         </Button>
-        <Button
-          type="submit"
-          size="lg"
-          className="flex-1 text-lg"
-          disabled={isSubmitting}
-        >
+        <Button type="submit" size="lg" className="flex-1 text-lg" disabled={isSubmitting}>
           {isSubmitting ? "מעבד..." : "המשך לתשלום"}
         </Button>
       </div>

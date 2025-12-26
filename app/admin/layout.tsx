@@ -5,11 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
@@ -50,9 +46,9 @@ export default function AdminLayout({
   // Show loading while checking auth
   if (checking && pathname !== "/admin/login") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
           <p className="mt-4 text-gray-600">טוען...</p>
         </div>
       </div>
@@ -68,16 +64,22 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="border-b bg-white">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-6">
             <h1 className="text-2xl font-bold text-primary">YL Sport Admin</h1>
             <nav className="flex gap-4">
               <Link
                 href="/admin"
-                className={`px-3 py-2 rounded ${pathname === "/admin" ? "bg-primary text-white" : "hover:bg-gray-100"}`}
+                className={`rounded px-3 py-2 ${pathname === "/admin" ? "bg-primary text-white" : "hover:bg-gray-100"}`}
               >
                 הזמנות
+              </Link>
+              <Link
+                href="/admin/discounts"
+                className={`rounded px-3 py-2 ${pathname === "/admin/discounts" ? "bg-primary text-white" : "hover:bg-gray-100"}`}
+              >
+                קודי הנחה
               </Link>
             </nav>
           </div>

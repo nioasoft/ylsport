@@ -7,10 +7,8 @@ import { getAdminSession } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
     const body = await request.json();
 
-    // Validate request data
     const validationResult = createOrderSchema.safeParse(body);
 
     if (!validationResult.success) {
@@ -26,37 +24,81 @@ export async function POST(request: NextRequest) {
 
     const data = validationResult.data;
 
-    // Generate order number (sequential)
+    let discountCodeId: string | null = null;
+
+    if (data.discountCode) {
+      const discount = await prisma.discountCode.findUnique({
+        where: { code: data.discountCode.toUpperCase() },
+      });
+
+      if (!discount || !discount.isActive) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "קוד הנחה לא תקין",
+            field: "discountCode",
+          },
+          { status: 400 }
+        );
+      }
+
+      const now = new Date();
+      if (discount.validFrom > now || (discount.validUntil && discount.validUntil < now)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "קוד הנחה לא תקין או פג תוקף",
+            field: "discountCode",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "הקוד הגיע למכסת השימוש",
+            field: "discountCode",
+          },
+          { status: 400 }
+        );
+      }
+
+      discountCodeId = discount.id;
+
+      await prisma.discountCode.update({
+        where: { id: discount.id },
+        data: { usageCount: { increment: 1 } },
+      });
+    }
+
     const orderCount = await prisma.order.count();
     const orderNumber = generateOrderNumber(orderCount);
 
-    // Create order in database
     const order = await prisma.order.create({
       data: {
         orderNumber,
 
-        // Customer Information
         customerName: data.customerName,
         customerEmail: data.customerEmail,
         customerPhone: data.customerPhone,
 
-        // Shipping Information
         shippingAddress: data.shippingAddress || "איסוף עצמי",
         shippingCity: data.shippingCity || "באר שבע",
         shippingPostalCode: data.shippingPostalCode || "0000000",
         shippingMethod: data.shippingMethod,
 
-        // Pricing
         subtotal: data.subtotal,
         shippingCost: data.shippingCost,
         discountAmount: data.discountAmount,
         total: data.total,
 
-        // Status
         status: "PENDING_PAYMENT",
         paymentStatus: "PENDING",
 
-        // Order Items
+        discountCodeId,
+
         items: {
           create: data.items.map((item) => ({
             productName: item.productName,

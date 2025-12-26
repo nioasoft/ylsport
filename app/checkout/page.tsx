@@ -26,34 +26,33 @@ export default function CheckoutPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Calculate subtotal from order items
+  const [discountCode, setDiscountCode] = useState<string>();
+  const [discountAmount, setDiscountAmount] = useState<number>();
+
   const calculateSubtotal = () => {
-    return orderItems.reduce(
-      (sum, item) => sum + item.quantity * PRODUCT_PRICE,
-      0
-    );
+    return orderItems.reduce((sum, item) => sum + item.quantity * PRODUCT_PRICE, 0);
   };
 
-  // Handle order form submission (step 1)
-  const handleOrderSubmit = (items: OrderItem[]) => {
+  const handleOrderSubmit = (
+    items: OrderItem[],
+    discountCode?: string,
+    discountAmount?: number
+  ) => {
     setOrderItems(items);
+    setDiscountCode(discountCode);
+    setDiscountAmount(discountAmount);
     setStep("shipping");
 
-    // Scroll to top
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Handle shipping form submission (step 2)
   const handleShippingSubmit = async (shippingData: ShippingFormData) => {
     setIsProcessing(true);
 
     try {
-      // Prepare order data
       const orderData = {
-        // Customer & Shipping Info
         ...shippingData,
 
-        // Order Items
         items: orderItems.map((item) => ({
           productName: PRODUCT_NAME,
           productSize: item.size,
@@ -62,14 +61,14 @@ export default function CheckoutPage() {
           totalPrice: item.quantity * PRODUCT_PRICE,
         })),
 
-        // Pricing
         subtotal: calculateSubtotal(),
-        shippingCost:
-          shippingData.shippingMethod === "STANDARD_DELIVERY" ? 30 : 0,
-        discountAmount: 0, // TODO: Add discount code support
+        shippingCost: shippingData.shippingMethod === "STANDARD_DELIVERY" ? 30 : 0,
+        discountCode,
+        discountAmount: discountAmount || 0,
         total:
           calculateSubtotal() +
-          (shippingData.shippingMethod === "STANDARD_DELIVERY" ? 30 : 0),
+          (shippingData.shippingMethod === "STANDARD_DELIVERY" ? 30 : 0) -
+          (discountAmount || 0),
       };
 
       // Create order via API
@@ -100,9 +99,7 @@ export default function CheckoutPage() {
       toast({
         title: "שגיאה",
         description:
-          error instanceof Error
-            ? error.message
-            : "אירעה שגיאה ביצירת ההזמנה. אנא נסה שוב.",
+          error instanceof Error ? error.message : "אירעה שגיאה ביצירת ההזמנה. אנא נסה שוב.",
         variant: "destructive",
       });
 
@@ -126,9 +123,7 @@ export default function CheckoutPage() {
             <div className="flex items-center">
               <div
                 className={`flex h-10 w-10 items-center justify-center rounded-full font-bold ${
-                  step === "order"
-                    ? "bg-primary text-white"
-                    : "bg-green-500 text-white"
+                  step === "order" ? "bg-primary text-white" : "bg-green-500 text-white"
                 }`}
               >
                 {step === "order" ? "1" : "✓"}
@@ -160,9 +155,7 @@ export default function CheckoutPage() {
             <div className="flex items-center">
               <div
                 className={`flex h-10 w-10 items-center justify-center rounded-full font-bold ${
-                  step === "processing"
-                    ? "bg-primary text-white"
-                    : "bg-gray-300 text-gray-600"
+                  step === "processing" ? "bg-primary text-white" : "bg-gray-300 text-gray-600"
                 }`}
               >
                 3
@@ -179,6 +172,8 @@ export default function CheckoutPage() {
           {step === "shipping" && (
             <ShippingForm
               subtotal={calculateSubtotal()}
+              discountCode={discountCode}
+              discountAmount={discountAmount}
               onSubmit={handleShippingSubmit}
               onBack={handleBack}
             />
