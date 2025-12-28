@@ -64,7 +64,7 @@ async function testCreateInvoice() {
       {
         type: 'I',
         code: 'TEST-001',
-        name: 'טייץ ספורט YL - מידה One Size',
+        name: 'טייץ ספורט YL - מידה M',
         price_type: 'G', // Gross (כולל מע"מ)
         unit_price: 1,
         units_number: 1,

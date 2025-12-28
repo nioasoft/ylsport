@@ -158,13 +158,13 @@ export function ProductShowcase() {
               </Card>
             </div>
 
-            {/* One Size Info */}
+            {/* Size Info */}
             <div className="rounded-lg bg-primary-light p-6">
-              <h4 className="font-semibold mb-2">מידה אחת - One Size</h4>
+              <h4 className="font-semibold mb-2">מידות זמינות: S, M, L, XL</h4>
               <p className="text-sm text-gray-700 mb-4">
-                הטייץ מתאים לכל המידות בזכות הגמישות הגבוהה והחומר האיכותי.
+                הטייץ מגיע ב-4 מידות לבחירתך.
                 <br />
-                מתאים להיקפי מותניים 60-100 ס&quot;מ
+                עיני במדריך המידות למטה לבחירת המידה המתאימה לך.
               </p>
             </div>
           </div>
