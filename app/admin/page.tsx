@@ -74,6 +74,8 @@ interface Pagination {
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [exchanges, setExchanges] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"ORDERS" | "EXCHANGES">("ORDERS");
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: 50,
@@ -111,6 +113,10 @@ export default function AdminDashboard() {
   // Tracking update
   const [updatingTracking, setUpdatingTracking] = useState(false);
   const [newTrackingNumber, setNewTrackingNumber] = useState("");
+
+  // Exchange Request
+  const [creatingExchange, setCreatingExchange] = useState(false);
+  const [exchangeLink, setExchangeLink] = useState<string | null>(null);
 
   // Fetch orders
   const fetchOrders = async () => {
@@ -151,6 +157,38 @@ export default function AdminDashboard() {
       console.error("Fetch orders error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch exchanges
+  const fetchExchanges = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/admin/exchanges");
+      const data = await res.json();
+      if (data.success) {
+        setExchanges(data.exchanges);
+      }
+    } catch (err) {
+      console.error("Fetch exchanges error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateExchangeStatus = async (id: string, status: string) => {
+    try {
+      const res = await fetch("/api/admin/exchanges", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (res.ok) {
+        fetchExchanges();
+        toast({ title: "הסטטוס עודכן" });
+      }
+    } catch (err) {
+      toast({ title: "שגיאה בעדכון", variant: "destructive" });
     }
   };
 
@@ -301,6 +339,48 @@ export default function AdminDashboard() {
     }
   };
 
+  // Create Exchange Request
+  const createExchangeRequest = async () => {
+    if (!selectedOrder) return;
+
+    setCreatingExchange(true);
+    setExchangeLink(null);
+    try {
+      const res = await fetch("/api/admin/exchanges/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: selectedOrder.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const link = `${window.location.origin}/exchanges/${data.token}`;
+      setExchangeLink(link);
+
+      toast({
+        title: "בקשת החלפה נוצרה",
+        description: "הקישור נוצר בהצלחה",
+      });
+    } catch (err) {
+      toast({
+        title: "שגיאה",
+        description: "נכשל ביצירת בקשת החלפה",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingExchange(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "הועתק",
+      description: "הקישור הועתק ללוח",
+    });
+  };
+
   // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -382,203 +462,289 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Statistics Dashboard */}
-      {stats && (
-        <div className="space-y-4">
-          {/* Action Items - Important alerts */}
-          {(stats.pendingProcessing > 0 || stats.staleShipped > 0) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {stats.pendingProcessing > 0 && (
-                <Card className="border-orange-300 bg-orange-50">
+      {/* Tabs */}
+      <div className="flex border-b">
+        <button
+          className={`px-6 py-2 font-medium ${activeTab === "ORDERS" ? "border-b-2 border-primary text-primary" : "text-gray-500"}`}
+          onClick={() => setActiveTab("ORDERS")}
+        >
+          הזמנות
+        </button>
+        <button
+          className={`px-6 py-2 font-medium ${activeTab === "EXCHANGES" ? "border-b-2 border-primary text-primary" : "text-gray-500"}`}
+          onClick={() => {
+            setActiveTab("EXCHANGES");
+            fetchExchanges();
+          }}
+        >
+          החלפות
+        </button>
+      </div>
+
+      {activeTab === "ORDERS" ? (
+        <>
+          {/* Statistics Dashboard */}
+          {stats && (
+            <div className="space-y-4">
+              {/* ... existing stats ... */}
+              {(stats.pendingProcessing > 0 || stats.staleShipped > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {stats.pendingProcessing > 0 && (
+                    <Card className="border-orange-300 bg-orange-50">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-orange-700 font-medium">ממתינות לטיפול</p>
+                        <p className="text-3xl font-bold text-orange-600">{stats.pendingProcessing}</p>
+                        <p className="text-xs text-orange-600 mt-1">הזמנות ששולמו וממתינות למשלוח</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {stats.staleShipped > 0 && (
+                    <Card className="border-red-300 bg-red-50">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-red-700 font-medium">תקועות במשלוח</p>
+                        <p className="text-3xl font-bold text-red-600">{stats.staleShipped}</p>
+                        <p className="text-xs text-red-600 mt-1">נשלחו לפני יותר מ-10 ימים</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+
+              {/* General Statistics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card>
                   <CardContent className="p-4">
-                    <p className="text-sm text-orange-700 font-medium">ממתינות לטיפול</p>
-                    <p className="text-3xl font-bold text-orange-600">{stats.pendingProcessing}</p>
-                    <p className="text-xs text-orange-600 mt-1">הזמנות ששולמו וממתינות למשלוח</p>
+                    <p className="text-sm text-gray-600">סה&quot;כ הזמנות</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
                   </CardContent>
                 </Card>
-              )}
-              {stats.staleShipped > 0 && (
-                <Card className="border-red-300 bg-red-50">
+                <Card>
                   <CardContent className="p-4">
-                    <p className="text-sm text-red-700 font-medium">תקועות במשלוח</p>
-                    <p className="text-3xl font-bold text-red-600">{stats.staleShipped}</p>
-                    <p className="text-xs text-red-600 mt-1">נשלחו לפני יותר מ-10 ימים</p>
+                    <p className="text-sm text-gray-600">הזמנות החודש</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.monthlyOrders}</p>
                   </CardContent>
                 </Card>
-              )}
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-600">סה&quot;כ הכנסות</p>
+                    <p className="text-2xl font-bold text-green-600">₪{stats.totalRevenue.toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-600">הכנסות החודש</p>
+                    <p className="text-2xl font-bold text-green-600">₪{stats.monthlyRevenue.toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 
-          {/* General Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-sm text-gray-600">סה&quot;כ הזמנות</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-sm text-gray-600">הזמנות החודש</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.monthlyOrders}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-sm text-gray-600">סה&quot;כ הכנסות</p>
-                <p className="text-2xl font-bold text-green-600">₪{stats.totalRevenue.toLocaleString()}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-sm text-gray-600">הכנסות החודש</p>
-                <p className="text-2xl font-bold text-green-600">₪{stats.monthlyRevenue.toLocaleString()}</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
+          {/* Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle>סינון</CardTitle>
+              <CardDescription>סנן והצג הזמנות לפי סטטוס ופרטי לקוח</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="status-filter">סטטוס</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger id="status-filter">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">הכל</SelectItem>
+                      <SelectItem value="PENDING_PAYMENT">ממתין לתשלום</SelectItem>
+                      <SelectItem value="PAID">שולם</SelectItem>
+                      <SelectItem value="PROCESSING">בטיפול</SelectItem>
+                      <SelectItem value="SHIPPED">נשלח</SelectItem>
+                      <SelectItem value="DELIVERED">נמסר</SelectItem>
+                      <SelectItem value="CANCELLED">בוטל</SelectItem>
+                      <SelectItem value="REFUNDED">הוחזר</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>סינון</CardTitle>
-          <CardDescription>סנן והצג הזמנות לפי סטטוס ופרטי לקוח</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="status-filter">סטטוס</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger id="status-filter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">הכל</SelectItem>
-                  <SelectItem value="PENDING_PAYMENT">ממתין לתשלום</SelectItem>
-                  <SelectItem value="PAID">שולם</SelectItem>
-                  <SelectItem value="PROCESSING">בטיפול</SelectItem>
-                  <SelectItem value="SHIPPED">נשלח</SelectItem>
-                  <SelectItem value="DELIVERED">נמסר</SelectItem>
-                  <SelectItem value="CANCELLED">בוטל</SelectItem>
-                  <SelectItem value="REFUNDED">הוחזר</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <div>
+                  <Label htmlFor="search">חיפוש</Label>
+                  <Input
+                    id="search"
+                    placeholder="מספר הזמנה, שם, אימייל, טלפון..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            <div>
-              <Label htmlFor="search">חיפוש</Label>
-              <Input
-                id="search"
-                placeholder="מספר הזמנה, שם, אימייל, טלפון..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Orders Table */}
+          <Card>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-4 text-gray-600">טוען הזמנות...</p>
+                </div>
+              ) : error ? (
+                <div className="p-8 text-center text-red-600">{error}</div>
+              ) : orders.length === 0 ? (
+                <div className="p-8 text-center text-gray-600">לא נמצאו הזמנות</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-right">מספר הזמנה</TableHead>
+                        <TableHead className="text-right">לקוח</TableHead>
+                        <TableHead className="text-right">טלפון</TableHead>
+                        <TableHead className="text-right">סכום</TableHead>
+                        <TableHead className="text-right">סטטוס</TableHead>
+                        <TableHead className="text-right">מעקב</TableHead>
+                        <TableHead className="text-right">תאריך</TableHead>
+                        <TableHead className="text-right">פעולות</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell
+                            className="font-medium cursor-pointer text-pink-600 hover:underline"
+                            onClick={() => openOrderDetails(order)}
+                          >
+                            {order.orderNumber}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{order.customerName}</div>
+                              <div className="text-sm text-gray-600">
+                                {order.customerEmail}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {formatPhoneNumber(order.customerPhone)}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            ₪{order.total.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(order.status)}>
+                              {getStatusText(order.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {order.trackingNumber || "-"}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {formatDate(order.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openOrderDetails(order)}
+                            >
+                              פרטים
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Orders Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-gray-600">טוען הזמנות...</p>
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="flex justify-center gap-2">
+              <Button
+                variant="outline"
+                disabled={pagination.page === 1}
+                onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+              >
+                הקודם
+              </Button>
+              <div className="flex items-center px-4">
+                עמוד {pagination.page} מתוך {pagination.totalPages}
+              </div>
+              <Button
+                variant="outline"
+                disabled={pagination.page === pagination.totalPages}
+                onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+              >
+                הבא
+              </Button>
             </div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-600">{error}</div>
-          ) : orders.length === 0 ? (
-            <div className="p-8 text-center text-gray-600">לא נמצאו הזמנות</div>
-          ) : (
-            <div className="overflow-x-auto">
+          )}
+        </>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-8 text-center">טוען החלפות...</div>
+            ) : exchanges.length === 0 ? (
+              <div className="p-8 text-center">אין בקשות החלפה כרגע</div>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">מספר הזמנה</TableHead>
+                    <TableHead className="text-right">הזמנה</TableHead>
                     <TableHead className="text-right">לקוח</TableHead>
-                    <TableHead className="text-right">טלפון</TableHead>
-                    <TableHead className="text-right">סכום</TableHead>
+                    <TableHead className="text-right">פרטי החלפה</TableHead>
                     <TableHead className="text-right">סטטוס</TableHead>
-                    <TableHead className="text-right">מעקב</TableHead>
-                    <TableHead className="text-right">תאריך</TableHead>
+                    <TableHead className="text-right">תאריך תשלום</TableHead>
                     <TableHead className="text-right">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell
-                        className="font-medium cursor-pointer text-pink-600 hover:underline"
-                        onClick={() => openOrderDetails(order)}
-                      >
-                        {order.orderNumber}
+                  {exchanges.map((ex) => (
+                    <TableRow key={ex.id}>
+                      <TableCell className="font-medium">{ex.order.orderNumber}</TableCell>
+                      <TableCell>
+                        {ex.order.customerName}
+                        <div className="text-xs text-gray-500">{formatPhoneNumber(ex.order.customerPhone)}</div>
+                      </TableCell>
+                      <TableCell className="text-sm max-w-[200px]">
+                        <div className="font-semibold text-red-600">מחזיר: {ex.returnItem || "טרם מולא"}</div>
+                        <div className="font-semibold text-green-600">מבקש: {ex.requestedItem || "טרם מולא"}</div>
+                        <div className="text-xs text-gray-500 mt-1 whitespace-pre-wrap">{ex.customerNote}</div>
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{order.customerName}</div>
-                          <div className="text-sm text-gray-600">
-                            {order.customerEmail}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {formatPhoneNumber(order.customerPhone)}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        ₪{order.total.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(order.status)}>
-                          {getStatusText(order.status)}
+                        <Badge className={
+                          ex.status === "PAID" ? "bg-green-100 text-green-800" :
+                          ex.status === "PROCESSED" ? "bg-gray-100 text-gray-800" :
+                          "bg-yellow-100 text-yellow-800"
+                        }>
+                          {ex.status === "PAID" ? "שולם - לטיפול" :
+                           ex.status === "PROCESSED" ? "טופל" : "ממתין לתשלום"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">
-                        {order.trackingNumber || "-"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {formatDate(order.createdAt)}
+                        {ex.paymentDate ? formatDate(ex.paymentDate) : "-"}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openOrderDetails(order)}
-                        >
-                          פרטים
-                        </Button>
+                        {ex.status === "PAID" && (
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            onClick={() => updateExchangeStatus(ex.id, "PROCESSED")}
+                          >
+                            סמן כטופל
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <Button
-            variant="outline"
-            disabled={pagination.page === 1}
-            onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-          >
-            הקודם
-          </Button>
-          <div className="flex items-center px-4">
-            עמוד {pagination.page} מתוך {pagination.totalPages}
-          </div>
-          <Button
-            variant="outline"
-            disabled={pagination.page === pagination.totalPages}
-            onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-          >
-            הבא
-          </Button>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Order Detail Modal */}
@@ -718,6 +884,45 @@ export default function AdminDashboard() {
                 <p className="text-sm text-gray-600 mt-1">
                   עדכון מספר המעקב ישלח אוטומטית מייל והודעת SMS ללקוח
                 </p>
+              </div>
+
+              {/* Exchange Request */}
+              <div className="pt-4 border-t">
+                <h3 className="font-semibold mb-2">יצירת החלפה / החזרה</h3>
+                {!exchangeLink ? (
+                  <Button
+                    variant="secondary"
+                    onClick={createExchangeRequest}
+                    disabled={creatingExchange}
+                    className="w-full sm:w-auto"
+                  >
+                    {creatingExchange ? "מייצר קישור..." : "צור קישור להחלפה (29 ₪ משלוח)"}
+                  </Button>
+                ) : (
+                  <div className="bg-green-50 p-3 rounded-md border border-green-200">
+                    <Label className="text-green-800">קישור להחלפה נוצר:</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input value={exchangeLink} readOnly className="bg-white" />
+                      <Button onClick={() => copyToClipboard(exchangeLink)} size="icon" variant="outline">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                        >
+                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

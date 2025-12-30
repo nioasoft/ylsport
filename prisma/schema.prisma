@@ -93,6 +93,7 @@ model Order {
   items              OrderItem[]
   discountCode       DiscountCode?  @relation(fields: [discountCodeId], references: [id])
   discountCodeId     String?
+  exchanges          ExchangeRequest[]
 
   // Timestamps
   createdAt          DateTime       @default(now())
@@ -196,4 +197,47 @@ model NewsletterSubscriber {
 
   @@index([email])
   @@map("newsletter_subscribers")
+}
+
+// ============================================================================
+// EXCHANGE REQUEST
+// ============================================================================
+
+enum ExchangeStatus {
+  PENDING_PAYMENT // Link created, customer hasn't paid yet
+  PAID            // Customer paid shipping, waiting for admin action
+  PROCESSED       // Admin handled the exchange (shipped)
+  CANCELLED       // Cancelled
+
+  @@map("exchange_status")
+}
+
+model ExchangeRequest {
+  id             String         @id @default(cuid())
+  token          String         @unique // For the public link
+  
+  // Relation to Order
+  order          Order          @relation(fields: [orderId], references: [id])
+  orderId        String
+
+  // Customer Input (filled when they access the link)
+  returnItem     String?        // e.g. "Size M"
+  requestedItem  String?        // e.g. "Size L"
+  customerNote   String?        // Optional user note
+
+  // Payment Info
+  shippingCost   Decimal        @default(29.00) @db.Decimal(10, 2)
+  status         ExchangeStatus @default(PENDING_PAYMENT)
+  
+  // Payment References
+  paymentId      String?        // Cardcom Deal/LowProfile Code
+  paymentDate    DateTime?
+
+  // Timestamps
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([token])
+  @@index([orderId])
+  @@map("exchange_requests")
 }

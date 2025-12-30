@@ -100,6 +100,16 @@ export function Footer() {
                   053-9197848
                 </a>
               </li>
+              <li>
+                <a
+                  href="https://wa.me/972508897290?text=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%94%D7%99%D7%99%D7%AA%D7%99%20%D7%A8%D7%95%D7%A6%D7%94%20%D7%9C%D7%91%D7%A6%D7%A2%20%D7%91%D7%A7%D7%A9%D7%AA%20%D7%94%D7%97%D7%9C%D7%A4%D7%94%20%D7%9C%D7%9E%D7%95%D7%A6%D7%A8%20%D7%A9%D7%9C%D7%99."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary font-medium text-green-600"
+                >
+                  החלפות והחזרות (WhatsApp)
+                </a>
+              </li>
               <li>באר שבע, ישראל</li>
             </ul>
 
