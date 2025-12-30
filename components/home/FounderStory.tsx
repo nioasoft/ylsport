@@ -17,16 +17,20 @@ export function FounderStory() {
                 הטייץ שהופך כל אימון לחיטוב אינטנסיבי
               </p>
             </div>
-            {/* Product Image - Larger */}
-            <div className="relative h-[500px] lg:h-[600px] w-full overflow-hidden rounded-2xl shadow-2xl">
-              <Image
-                src="/images/product1.webp"
-                alt="YL Sport Tights - טייץ ספורט יפעת לוי"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 50vw"
-                priority
-              />
+            {/* Product Video - Larger */}
+            <div className="relative h-[500px] lg:h-[600px] w-full overflow-hidden rounded-2xl shadow-2xl bg-black">
+              <video
+                className="w-full h-full object-cover"
+                controls
+                autoPlay
+                muted
+                loop
+                playsInline
+                poster="/images/product1.webp"
+              >
+                <source src="/video/model_video.mp4" type="video/mp4" />
+                הדפדפן שלך לא תומך בנגן וידאו.
+              </video>
             </div>
 
             {/* Expanded Product Information */}
