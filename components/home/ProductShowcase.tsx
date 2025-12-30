@@ -25,6 +25,16 @@ const productImages = [
     url: "/images/product4.webp",
     alt: "טייץ ספורט YL - תמונה באימון",
   },
+  {
+    id: 5,
+    url: "/images/new1.webp",
+    alt: "טייץ ספורט YL - מבט נוסף",
+  },
+  {
+    id: 6,
+    url: "/images/new2.webp",
+    alt: "טייץ ספורט YL - זווית נוספת",
+  },
 ];
 
 const features = [
@@ -167,6 +177,28 @@ export function ProductShowcase() {
                 עיני במדריך המידות למטה לבחירת המידה המתאימה לך.
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Video Section */}
+        <div className="mt-16">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold md:text-3xl">הטייץ בפעולה</h3>
+            <p className="mt-2 text-gray-600">צפי בסרטון ותראי איך הטייץ יושב מושלם על הגוף</p>
+          </div>
+          <div className="relative max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-xl bg-black">
+            <video
+              className="w-full h-auto"
+              controls
+              autoPlay
+              muted
+              loop
+              playsInline
+              poster="/images/product1.webp"
+            >
+              <source src="/video/model_video.mp4" type="video/mp4" />
+              הדפדפן שלך לא תומך בנגן וידאו.
+            </video>
           </div>
         </div>
       </div>
