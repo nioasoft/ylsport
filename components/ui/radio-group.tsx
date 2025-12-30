@@ -31,6 +31,7 @@ RadioGroup.displayName = "RadioGroup"
 const RadioGroupItem = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    checked?: boolean
     onCheckedChange?: (value: string) => void
   }
 >(({ className, value, checked, onCheckedChange, ...props }, ref) => {
