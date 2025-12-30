@@ -97,6 +97,9 @@ export function ProductShowcase() {
                 priority={selectedImage === 0}
               />
             </div>
+            <p className="text-center text-sm text-gray-500 font-medium">
+              * הדוגמנית לובשת מידה S
+            </p>
 
             {/* Thumbnail Gallery */}
             <div className="grid grid-cols-4 gap-2">
