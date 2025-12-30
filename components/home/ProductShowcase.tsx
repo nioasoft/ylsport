@@ -7,33 +7,33 @@ import { Card, CardContent } from "@/components/ui/card";
 const productImages = [
   {
     id: 1,
+    url: "/images/new1.webp",
+    alt: "טייץ ספורט YL - דגם חדש",
+  },
+  {
+    id: 2,
+    url: "/images/new2.webp",
+    alt: "טייץ ספורט YL - דגם חדש מבט מקרוב",
+  },
+  {
+    id: 3,
     url: "/images/product1.webp",
     alt: "טייץ ספורט YL - תמונה ראשית",
   },
   {
-    id: 2,
+    id: 4,
     url: "/images/product2.webp",
     alt: "טייץ ספורט YL - זווית צד",
   },
   {
-    id: 3,
+    id: 5,
     url: "/images/product3.webp",
     alt: "טייץ ספורט YL - פרטי בד",
   },
   {
-    id: 4,
+    id: 6,
     url: "/images/product4.webp",
     alt: "טייץ ספורט YL - תמונה באימון",
-  },
-  {
-    id: 5,
-    url: "/images/new1.webp",
-    alt: "טייץ ספורט YL - מבט נוסף",
-  },
-  {
-    id: 6,
-    url: "/images/new2.webp",
-    alt: "טייץ ספורט YL - זווית נוספת",
   },
 ];
 
