@@ -20,7 +20,9 @@ export function FounderStory() {
                 נמאס לך מטייץ שמחליק באימון?
               </h2>
               <p className="text-xl md:text-2xl font-semibold text-gray-800">
-                הכירי את הטייץ שאוסף, מחטב ונשאר איתך בכל תנועה
+                הכירי את הטייץ שאוסף, מחטב, נשאר איתך בכל תנועה
+                <br />
+                <span className="text-primary font-bold">ושיגרום לך לשרוף פי 2 בכל אימון!</span>
               </p>
             </div>
             {/* Product Video - Larger (Increased height by 20%) */}
