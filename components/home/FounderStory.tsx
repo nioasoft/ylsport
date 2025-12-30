@@ -10,15 +10,21 @@ export function FounderStory() {
           <div className="flex flex-col space-y-6">
             {/* Product Headline */}
             <div className="text-center">
-              <h2 className="text-3xl font-bold md:text-4xl text-primary mb-2">
-                כל תנועה מחטבת פי 2
+              <div className="flex justify-center gap-1 mb-2">
+                {[...Array(5)].map((_, i) => (
+                  <span key={i} className="text-yellow-400 text-xl">★</span>
+                ))}
+                <span className="text-sm text-gray-600 mr-2 flex items-center">(4.9/5 מתוך 2,400+ לקוחות)</span>
+              </div>
+              <h2 className="text-3xl font-bold md:text-4xl text-primary mb-2 leading-tight">
+                נמאס לך מטייץ שמחליק באימון?
               </h2>
               <p className="text-xl md:text-2xl font-semibold text-gray-800">
-                הטייץ שהופך כל אימון לחיטוב אינטנסיבי
+                הכירי את הטייץ שאוסף, מחטב ונשאר איתך בכל תנועה
               </p>
             </div>
-            {/* Product Video - Larger */}
-            <div className="relative h-[500px] lg:h-[600px] w-full overflow-hidden rounded-2xl shadow-2xl bg-black">
+            {/* Product Video - Larger (Increased height by 20%) */}
+            <div className="relative h-[600px] lg:h-[720px] w-full overflow-hidden rounded-2xl shadow-2xl bg-black">
               <video
                 className="w-full h-full object-cover"
                 controls

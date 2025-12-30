@@ -10,19 +10,24 @@ import { Button } from "@/components/ui/button";
  */
 export function MobileStickyBar() {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
-      <div className="bg-white border-t border-gray-200 shadow-2xl px-4 py-3">
+    <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+      <div className="bg-white/95 backdrop-blur-sm border-t border-gray-100 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] px-4 pt-3 pb-6">
         <Link href="/checkout">
           <Button
             size="lg"
-            className="w-full text-lg py-6 font-bold shadow-lg"
+            className="w-full text-lg py-6 font-bold shadow-lg bg-primary hover:bg-primary/90"
           >
-            קנה עכשיו
+            אני רוצה את הטייץ שלי ✨
           </Button>
         </Link>
-        <p className="text-xs text-center text-gray-500 mt-2">
-          משלוח מהיר | החזרה חינם
-        </p>
+        <div className="flex justify-between items-center mt-3 px-1">
+          <p className="text-[10px] text-gray-500">
+            ✓ משלוח מהיר | ✓ החלפה בקלות
+          </p>
+          <p className="text-[10px] font-bold text-red-500 animate-pulse">
+            נשארו יחידות אחרונות במלאי!
+          </p>
+        </div>
       </div>
     </div>
   );
