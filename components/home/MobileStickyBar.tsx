@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
  */
 export function MobileStickyBar() {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-      <div className="bg-white/95 backdrop-blur-sm border-t border-gray-100 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] px-4 pt-3 pb-6">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4 pointer-events-none">
+      <div className="bg-white/95 backdrop-blur-sm border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.15)] rounded-2xl px-4 pt-3 pb-4 w-full max-w-md pointer-events-auto mb-2">
         <Link href="/checkout">
           <Button
             size="lg"
-            className="w-full text-lg py-6 font-bold shadow-lg bg-primary hover:bg-primary/90"
+            className="w-full text-lg py-6 font-bold shadow-lg bg-primary hover:bg-primary/90 transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
             אני רוצה את הטייץ שלי ✨
           </Button>
