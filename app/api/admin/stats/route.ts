@@ -24,30 +24,36 @@ export async function GET() {
       pendingProcessing,
       staleShipped,
     ] = await Promise.all([
-      // Total orders count (all paid orders)
+      // Total orders count (all active orders)
       prisma.order.count({
         where: {
-          paymentStatus: "COMPLETED",
+          status: {
+            in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"],
+          },
         },
       }),
 
       // Monthly orders count
       prisma.order.count({
         where: {
-          paymentStatus: "COMPLETED",
+          status: {
+            in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"],
+          },
           createdAt: {
             gte: startOfMonth,
           },
         },
       }),
 
-      // Total revenue (sum of all paid orders)
+      // Total revenue (sum of all active orders)
       prisma.order.aggregate({
         _sum: {
           total: true,
         },
         where: {
-          paymentStatus: "COMPLETED",
+          status: {
+            in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"],
+          },
         },
       }),
 
@@ -57,7 +63,9 @@ export async function GET() {
           total: true,
         },
         where: {
-          paymentStatus: "COMPLETED",
+          status: {
+            in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"],
+          },
           createdAt: {
             gte: startOfMonth,
           },
