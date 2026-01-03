@@ -176,9 +176,9 @@ export const createDiscountCodeSchema = z
       .positive("ערך הנחה חייב להיות חיובי")
       .refine((val) => val <= 100, "אחוז הנחה לא יכול לעבור 100%"),
 
-    validFrom: z.date().default(() => new Date()),
+    validFrom: z.coerce.date().default(() => new Date()),
 
-    validUntil: z.date(),
+    validUntil: z.coerce.date(),
 
     usageLimit: z
       .number()
