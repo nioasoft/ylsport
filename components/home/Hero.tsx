@@ -25,7 +25,7 @@ export function Hero() {
               {/* Price */}
               <div className="text-center lg:text-right">
                 <p className="text-sm text-gray-600">מחיר מבצע</p>
-                <p className="text-4xl font-bold text-primary">₪299</p>
+                <p className="text-4xl font-bold text-primary">₪229</p>
                 <p className="text-sm text-gray-600 line-through">₪399</p>
               </div>
 
