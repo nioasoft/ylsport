@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { formatPrice } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
-const PRODUCT_PRICE = 229;
+const PRODUCT_PRICE = 199;
 
 interface OrderItem {
   size: "S" | "M" | "L" | "XL";

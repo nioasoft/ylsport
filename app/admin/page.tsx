@@ -54,6 +54,7 @@ interface Order {
   status: string;
   paymentStatus: string;
   trackingNumber: string | null;
+  cancellationReason: string | null;
   subtotal: number;
   shippingCost: number;
   discountAmount: number;
@@ -631,9 +632,14 @@ export default function AdminDashboard() {
                             ₪{order.total.toFixed(2)}
                           </TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(order.status)}>
-                              {getStatusText(order.status)}
-                            </Badge>
+                            <div>
+                              <Badge className={getStatusColor(order.status)}>
+                                {getStatusText(order.status)}
+                              </Badge>
+                              {order.status === "CANCELLED" && order.cancellationReason && (
+                                <p className="text-xs text-red-600 mt-1">{order.cancellationReason}</p>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-sm">
                             {order.trackingNumber || "-"}
@@ -830,6 +836,14 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
+
+              {/* Cancellation Reason */}
+              {selectedOrder.status === "CANCELLED" && selectedOrder.cancellationReason && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded text-sm">
+                  <span className="font-semibold">סיבת ביטול: </span>
+                  {selectedOrder.cancellationReason}
+                </div>
+              )}
 
               {/* Status Update */}
               <div>

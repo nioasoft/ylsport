@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
         data: {
           status: "CANCELLED",
           paymentStatus: "FAILED",
+          cancellationReason: verification.message,
         },
       });
 

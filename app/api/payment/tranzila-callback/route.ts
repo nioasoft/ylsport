@@ -153,6 +153,7 @@ async function processCallback(data: Record<string, unknown>) {
       data: {
         status: "CANCELLED",
         paymentStatus: "FAILED",
+        cancellationReason: verification.message,
       },
     });
 

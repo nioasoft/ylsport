@@ -82,6 +82,7 @@ model Order {
   status             OrderStatus    @default(PENDING_PAYMENT)
   paymentStatus      PaymentStatus  @default(PENDING)
   trackingNumber     String?        // Nullable until shipped
+  cancellationReason String?        // Reason for cancellation (e.g., Tranzila error)
 
   // Payment Reference
   tranzilaPaymentId  String?        @unique // Tranzila pr_id for callback matching
