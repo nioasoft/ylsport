@@ -36,7 +36,7 @@ export function FounderStory() {
                 playsInline
                 poster="/images/product1.webp"
               >
-                <source src="/video/model_video.mp4" type="video/mp4" />
+                <source src="/video/VIDEO-2026-02-17-15-43-22.mp4" type="video/mp4" />
                 הדפדפן שלך לא תומך בנגן וידאו.
               </video>
             </div>

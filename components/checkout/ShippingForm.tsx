@@ -29,7 +29,7 @@ const SHIPPING_METHODS = [
   {
     value: "STANDARD_DELIVERY" as const,
     label: "משלוח רגיל",
-    cost: 30,
+    cost: 20,
     description: "משלוח עד הבית תוך 3-5 ימי עסקים",
   },
   {
@@ -70,7 +70,7 @@ export function ShippingForm({
   };
 
   const getShippingCost = () => {
-    return shippingMethod === "STANDARD_DELIVERY" ? 30 : 0;
+    return shippingMethod === "STANDARD_DELIVERY" ? 20 : 0;
   };
 
   const getTotal = () => {

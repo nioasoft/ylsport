@@ -62,12 +62,12 @@ export default function CheckoutPage() {
         })),
 
         subtotal: calculateSubtotal(),
-        shippingCost: shippingData.shippingMethod === "STANDARD_DELIVERY" ? 30 : 0,
+        shippingCost: shippingData.shippingMethod === "STANDARD_DELIVERY" ? 20 : 0,
         discountCode,
         discountAmount: discountAmount || 0,
         total:
           calculateSubtotal() +
-          (shippingData.shippingMethod === "STANDARD_DELIVERY" ? 30 : 0) -
+          (shippingData.shippingMethod === "STANDARD_DELIVERY" ? 20 : 0) -
           (discountAmount || 0),
       };
 
