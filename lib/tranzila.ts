@@ -220,6 +220,7 @@ export class TranzilaSDK {
       created_by_user: 'website',
       payment_plans: [1], // Regular payment
       payment_methods: [1], // Credit card
+      cred_type: 1, // 1 = Regular charge (חיוב רגיל), not authorization hold
       // IPN callback URL - Tranzila will POST here after payment
       ipn_url: ipnUrl,
       // Pass our order ID so we can identify it in callback
