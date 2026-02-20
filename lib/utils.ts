@@ -289,10 +289,10 @@ export function getShippingMethodLabel(method: string): string {
  */
 export function getProductSizeLabel(size: string): string {
   const sizeLabels: Record<string, string> = {
-    S: "S (קטן)",
-    M: "M (בינוני)",
-    L: "L (גדול)",
-    XL: "XL (גדול במיוחד)",
+    S: "S-36",
+    M: "M-38",
+    L: "L-40",
+    XL: "XL-42",
   };
   return sizeLabels[size] || size;
 }

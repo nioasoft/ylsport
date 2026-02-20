@@ -148,10 +148,10 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
                 ))}
               </div>
               <div className="flex justify-center gap-4 text-sm text-gray-600">
-                <span className="w-14 text-center">Small</span>
-                <span className="w-14 text-center">Medium</span>
-                <span className="w-14 text-center">Large</span>
-                <span className="w-14 text-center">Extra Large</span>
+                <span className="w-14 text-center">36</span>
+                <span className="w-14 text-center">38</span>
+                <span className="w-14 text-center">40</span>
+                <span className="w-14 text-center">42</span>
               </div>
             </div>
 
