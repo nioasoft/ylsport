@@ -140,7 +140,7 @@ const faqData: { category: string; items: FAQItem[] }[] = [
       {
         question: "מתי אוכל להתקשר לשירות לקוחות?",
         answer:
-          "שירות הלקוחות שלנו זמין בימים א׳-ה׳, בשעות 09:00-17:00. ניתן לפנות אלינו בטלפון 053-9197848 או באימייל ylsport1@gmail.com. אנו מתחייבים לענות לכל פנייה תוך 24 שעות (בימי עסקים).",
+          "שירות הלקוחות שלנו זמין בימים א׳-ה׳, בשעות 09:00-17:00. ניתן לפנות אלינו בטלפון 050-889-7290 (יפעת) או באימייל ylsport1@gmail.com. אנו מתחייבים לענות לכל פנייה תוך 24 שעות (בימי עסקים).",
       },
       {
         question: "האם יש הנחות או קופונים?",
@@ -262,7 +262,7 @@ export default function FAQPage() {
                   שלחי אימייל
                 </a>
                 <a
-                  href="tel:0539197848"
+                  href="tel:0508897290"
                   className="inline-flex items-center justify-center gap-2 bg-white text-primary border-2 border-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
                 >
                   <svg
@@ -278,7 +278,7 @@ export default function FAQPage() {
                       d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                     />
                   </svg>
-                  התקשרי: 053-9197848
+                  התקשרי: 050-889-7290
                 </a>
               </div>
               <p className="text-sm text-gray-600 mt-4">

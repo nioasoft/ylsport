@@ -103,7 +103,7 @@ export default function ShippingPage() {
                   <div>
                     <p className="font-semibold text-gray-900">צור קשר</p>
                     <p className="text-gray-700 text-sm">
-                      פנה אלינו באימייל ylsport1@gmail.com או בטלפון 053-9197848
+                      פנה אלינו באימייל ylsport1@gmail.com או בטלפון 050-889-7290
                     </p>
                   </div>
                 </div>
@@ -233,10 +233,10 @@ export default function ShippingPage() {
                   <div>
                     <p className="text-sm font-semibold text-gray-600 mb-1">טלפון</p>
                     <a
-                      href="tel:0539197848"
+                      href="tel:0508897290"
                       className="text-primary hover:underline text-lg"
                     >
-                      053-9197848
+                      050-889-7290
                     </a>
                   </div>
                 </div>

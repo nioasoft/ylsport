@@ -173,8 +173,8 @@ export function OrderConfirmationEmail(data: OrderConfirmationEmailData) {
                 info@yl-sport.co.il
               </Link>
               {" | "}
-              <Link href="tel:+972-53-919-7848" style={link}>
-                053-9197848
+              <Link href="tel:+972-50-889-7290" style={link}>
+                050-889-7290
               </Link>
             </Text>
 

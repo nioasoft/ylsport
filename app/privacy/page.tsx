@@ -202,8 +202,8 @@ export default function PrivacyPage() {
                   </p>
                   <p className="text-gray-700 mb-2">
                     <strong>טלפון:</strong>{" "}
-                    <a href="tel:0539197848" className="text-primary hover:underline">
-                      053-9197848
+                    <a href="tel:0508897290" className="text-primary hover:underline">
+                      050-889-7290
                     </a>
                   </p>
                   <p className="text-gray-700">

@@ -193,8 +193,8 @@ export default function AccessibilityPage() {
                     </p>
                     <p>
                       <strong>טלפון:</strong>{" "}
-                      <a href="tel:0539197848" className="text-primary hover:underline">
-                        053-9197848
+                      <a href="tel:0508897290" className="text-primary hover:underline">
+                        050-889-7290
                       </a>
                     </p>
                     <p><strong>שעות פעילות:</strong> ימים א׳-ה׳, 09:00-17:00</p>

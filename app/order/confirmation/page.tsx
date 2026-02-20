@@ -284,8 +284,8 @@ function OrderConfirmationContent() {
               ylsport1@gmail.com
             </a>{" "}
             או{" "}
-            <a href="tel:0539197848" className="text-primary hover:underline">
-              053-9197848
+            <a href="tel:0508897290" className="text-primary hover:underline">
+              050-889-7290
             </a>
           </p>
         </div>
