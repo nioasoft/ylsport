@@ -2,28 +2,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const sizeData = [
   {
-    size: "S",
+    size: "S-36",
     waist: "60-65",
     hips: "85-90",
     inseam: "70",
     weight: "45-55",
   },
   {
-    size: "M",
+    size: "M-38",
     waist: "66-71",
     hips: "91-96",
     inseam: "72",
     weight: "56-65",
   },
   {
-    size: "L",
+    size: "L-40",
     waist: "72-77",
     hips: "97-102",
     inseam: "74",
     weight: "66-75",
   },
   {
-    size: "XL",
+    size: "XL-42",
     waist: "78-85",
     hips: "103-110",
     inseam: "76",

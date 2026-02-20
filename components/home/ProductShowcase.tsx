@@ -173,7 +173,7 @@ export function ProductShowcase() {
 
             {/* Size Info */}
             <div className="rounded-lg bg-primary-light p-6">
-              <h4 className="font-semibold mb-2">מידות זמינות: S, M, L, XL</h4>
+              <h4 className="font-semibold mb-2">מידות זמינות: S-36, M-38, L-40, XL-42</h4>
               <p className="text-sm text-gray-700 mb-4">
                 הטייץ מגיע ב-4 מידות לבחירתך.
                 <br />
