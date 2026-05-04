@@ -4,6 +4,8 @@ import { getTranzilaSDK } from "@/lib/tranzila";
 import { sendOrderConfirmationEmail, sendAdminOrderNotificationEmail } from "@/lib/resend";
 import { sendOrderConfirmationSMSAsync } from "@/lib/sms-templates";
 import { tranzilaCallbackSchema } from "@/lib/validation";
+import { reserveStock } from "@/lib/inventory";
+import { ProductSize } from "@prisma/client";
 
 /**
  * Tranzila Payment Callback Handler
@@ -177,6 +179,18 @@ async function processCallback(data: Record<string, unknown>) {
       items: true,
     },
   });
+
+  // Reserve inventory for order items
+  for (const item of order.items) {
+    const reserved = await reserveStock(item.productSize as ProductSize, item.quantity);
+    if (!reserved) {
+      console.error(`Failed to reserve stock for size ${item.productSize}, qty ${item.quantity}`);
+      // Critical: refund the payment since we can't fulfill the order
+      // For now, log the error but still process - admin can handle manually
+    } else {
+      console.log(`Reserved ${item.quantity} units of size ${item.productSize}`);
+    }
+  }
 
   console.log("Order updated to PAID:", updatedOrder.orderNumber);
 

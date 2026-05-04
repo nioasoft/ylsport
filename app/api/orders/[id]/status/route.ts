@@ -4,12 +4,15 @@
  * Update order status (admin only)
  * - Validates status transitions
  * - Auto-triggers shipping notification if status = SHIPPED and tracking exists
+ * - Updates inventory on status changes
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminAuth } from "@/lib/auth";
 import { sendShippingNotification } from "@/services/notification.service";
+import { releaseStock, confirmSale } from "@/lib/inventory";
+import { ProductSize } from "@prisma/client";
 
 // Valid order status values
 const VALID_STATUSES = [
@@ -81,6 +84,30 @@ export async function PATCH(
         console.error("Failed to send shipping notification:", notificationError);
         // Don't fail the status update if notification fails
       }
+    }
+
+    // ========================================================================
+    // INVENTORY UPDATES based on status transition
+    // ========================================================================
+    try {
+      if ((status === "SHIPPED" || status === "DELIVERED") && order.status === "PAID") {
+        // PAID → SHIPPED/DELIVERED: move from reserved to sold
+        for (const item of updatedOrder.items) {
+          await confirmSale(item.productSize as ProductSize, item.quantity);
+          console.log(`Confirmed sale: ${item.quantity}x size ${item.productSize}`);
+        }
+      } else if (status === "CANCELLED" || status === "REFUNDED") {
+        // ANY → CANCELLED/REFUNDED: release reserved stock
+        if (order.status === "PAID" || order.status === "PROCESSING") {
+          for (const item of updatedOrder.items) {
+            await releaseStock(item.productSize as ProductSize, item.quantity);
+            console.log(`Released stock: ${item.quantity}x size ${item.productSize}`);
+          }
+        }
+      }
+    } catch (inventoryError) {
+      console.error("Inventory update error:", inventoryError);
+      // Don't fail the status update if inventory update fails
     }
 
     return NextResponse.json({

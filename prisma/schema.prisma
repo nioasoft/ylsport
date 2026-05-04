@@ -242,3 +242,19 @@ model ExchangeRequest {
   @@index([orderId])
   @@map("exchange_requests")
 }
+
+// ============================================================================
+// SIZE INVENTORY
+// ============================================================================
+
+model SizeInventory {
+  id            String      @id @default(cuid())
+  size          ProductSize @unique
+  totalStock    Int         // Total units available (e.g., 180)
+  reservedStock Int         @default(0) // Paid orders not yet shipped
+  soldStock     Int         @default(0) // Shipped/delivered orders
+  isActive      Boolean     @default(true) // Allow ordering this size?
+  updatedAt     DateTime    @updatedAt
+
+  @@map("size_inventory")
+}

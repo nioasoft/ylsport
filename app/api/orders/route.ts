@@ -4,6 +4,8 @@ import { getTranzilaSDK } from "@/lib/tranzila";
 import { createOrderSchema } from "@/lib/validation";
 import { generateOrderNumber } from "@/lib/utils";
 import { getAdminSession } from "@/lib/auth";
+import { getAvailableStock } from "@/lib/inventory";
+import { ProductSize } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +25,36 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validationResult.data;
+
+    // ========================================================================
+    // INVENTORY CHECK - verify stock before creating the order
+    // ========================================================================
+    for (const item of data.items) {
+      const available = await getAvailableStock(item.productSize as ProductSize);
+      if (available < item.quantity) {
+        if (available === 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `המלאי למידה ${item.productSize} אזל`,
+              field: "size",
+              size: item.productSize,
+            },
+            { status: 400 }
+          );
+        }
+        return NextResponse.json(
+          {
+            success: false,
+            message: `נותרו רק ${available} יחידות במידה ${item.productSize}`,
+            field: "quantity",
+            size: item.productSize,
+            available,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     let discountCodeId: string | null = null;
 

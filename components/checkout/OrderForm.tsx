@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,9 +9,16 @@ import { Input } from "@/components/ui/input";
 
 const PRODUCT_PRICE = 199;
 
+type Size = "S" | "M" | "L" | "XL";
+
 interface OrderItem {
-  size: "S" | "M" | "L" | "XL";
+  size: Size;
   quantity: number;
+}
+
+interface SizeStock {
+  available: number;
+  isActive: boolean;
 }
 
 interface OrderFormProps {
@@ -20,7 +27,15 @@ interface OrderFormProps {
 
 export function OrderForm({ onSubmit }: OrderFormProps) {
   const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState<"S" | "M" | "L" | "XL">("S");
+  const [selectedSize, setSelectedSize] = useState<Size>("S");
+
+  const [stockData, setStockData] = useState<Record<Size, SizeStock>>({
+    S: { available: 0, isActive: true },
+    M: { available: 0, isActive: true },
+    L: { available: 0, isActive: true },
+    XL: { available: 0, isActive: true },
+  });
+  const [stockLoaded, setStockLoaded] = useState(false);
 
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<{
@@ -34,16 +49,50 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
     text: string;
   } | null>(null);
 
+  // Fetch inventory on mount
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  async function fetchInventory() {
+    try {
+      const res = await fetch("/api/inventory");
+      const data = await res.json();
+      if (data.success) {
+        setStockData(data.inventory);
+        setStockLoaded(true);
+      }
+    } catch (err) {
+      console.error("Failed to load inventory:", err);
+      setStockLoaded(true); // still allow ordering, server will validate
+    }
+  }
+
+  const maxAllowed = stockLoaded
+    ? Math.min(10, stockData[selectedSize]?.available || 0)
+    : 10;
+
+  const isSizeAvailable = (size: Size) => {
+    if (!stockLoaded) return true; // assume available until loaded
+    const stock = stockData[size];
+    return stock.isActive && stock.available > 0;
+  };
+
   const handleQuantityChange = (delta: number) => {
     const newQuantity = quantity + delta;
-    // Validate quantity (1-10)
-    if (newQuantity >= 1 && newQuantity <= 10) {
+    if (newQuantity >= 1 && newQuantity <= maxAllowed) {
       setQuantity(newQuantity);
     }
   };
 
-  const handleSizeChange = (size: "S" | "M" | "L" | "XL") => {
+  const handleSizeChange = (size: Size) => {
+    if (!isSizeAvailable(size)) return;
     setSelectedSize(size);
+    // Reset quantity if it exceeds new size's stock
+    const newMax = Math.min(10, stockData[size]?.available || 10);
+    if (quantity > newMax) {
+      setQuantity(Math.max(1, newMax));
+    }
   };
 
   const calculateSubtotal = () => {
@@ -106,6 +155,8 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
     onSubmit([{ size: selectedSize, quantity }], appliedDiscount?.code, appliedDiscount?.amount);
   };
 
+  const sizeLabels: Record<Size, string> = { S: "S (36)", M: "M (38)", L: "L (40)", XL: "XL (42)" };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
@@ -127,32 +178,56 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
             {/* Size Selector */}
             <div className="mb-6">
               <Label className="mb-3 block text-lg font-semibold">בחרי מידה</Label>
-              <div className="mb-3 flex justify-center gap-4">
-                {["S", "M", "L", "XL"].map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => handleSizeChange(size as "S" | "M" | "L" | "XL")}
-                    className={`
-                      flex h-14 w-14 items-center justify-center rounded-full border-2 
-                      text-xl font-bold transition-all
-                      ${
-                        selectedSize === size
-                          ? "scale-110 border-primary bg-primary-light text-primary"
-                          : "border-gray-300 bg-white hover:border-primary"
-                      }
-                    `}
-                  >
-                    {size}
-                  </button>
-                ))}
+              <div className="flex justify-center gap-4">
+                {(["S", "M", "L", "XL"] as Size[]).map((size) => {
+                  const available = isSizeAvailable(size);
+
+                  return (
+                    <div key={size} className="flex flex-col items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSizeChange(size)}
+                        disabled={!available}
+                        className={`
+                          relative flex h-14 w-14 items-center justify-center rounded-full border-2 
+                          text-xl font-bold transition-all
+                          ${
+                            !available
+                              ? "cursor-not-allowed border-gray-300 bg-gray-100 text-gray-300"
+                              : selectedSize === size
+                                ? "scale-110 border-primary bg-primary-light text-primary shadow-md"
+                                : "border-gray-300 bg-white hover:border-primary hover:shadow-sm"
+                          }
+                        `}
+                      >
+                        <span className={!available ? "line-through decoration-2" : ""}>
+                          {size}
+                        </span>
+                      </button>
+                      <span className="w-14 text-center text-sm text-gray-600">{size === "S" ? "36" : size === "M" ? "38" : size === "L" ? "40" : "42"}</span>
+                      {!available && stockLoaded ? (
+                        <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-bold leading-none text-red-700 ring-1 ring-red-200">
+                          Sold Out
+                        </span>
+                      ) : (
+                        <span className="h-[18px]" />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex justify-center gap-4 text-sm text-gray-600">
-                <span className="w-14 text-center">36</span>
-                <span className="w-14 text-center">38</span>
-                <span className="w-14 text-center">40</span>
-                <span className="w-14 text-center">42</span>
-              </div>
+
+              {/* Stock indicator */}
+              {stockLoaded && isSizeAvailable(selectedSize) && stockData[selectedSize].available <= 10 && (
+                <p className="mt-2 text-center text-sm font-medium text-orange-600">
+                  🔥 נותרו רק {stockData[selectedSize].available} יחידות במידה {selectedSize}!
+                </p>
+              )}
+              {stockLoaded && !isSizeAvailable(selectedSize) && (
+                <p className="mt-2 text-center text-sm font-medium text-red-600">
+                  המלאי למידה {selectedSize} אזל
+                </p>
+              )}
             </div>
 
             {/* Quantity Selector */}
@@ -173,13 +248,18 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
                 <button
                   type="button"
                   onClick={() => handleQuantityChange(1)}
-                  disabled={quantity >= 10}
+                  disabled={quantity >= maxAllowed}
                   className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-gray-300 bg-white text-xl font-bold transition-all hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   +
                 </button>
               </div>
-              <p className="mt-1 text-xs text-gray-600">מקסימום 10 יחידות להזמנה</p>
+              <p className="mt-1 text-xs text-gray-600">
+                מקסימום {maxAllowed} יחידות להזמנה
+                {stockLoaded && stockData[selectedSize]?.available < 10 && stockData[selectedSize]?.available > 0 && (
+                  <span className="text-orange-600"> (מוגבל לפי המלאי הזמין)</span>
+                )}
+              </p>
             </div>
           </div>
 
@@ -242,7 +322,7 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
             </div>
             <div className="flex justify-between text-sm">
               <span>מידה:</span>
-              <span className="font-semibold">{selectedSize}</span>
+              <span className="font-semibold">{sizeLabels[selectedSize]}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>מחיר לפני הנחה:</span>
@@ -264,8 +344,13 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" size="lg" className="w-full text-lg">
-            המשך לפרטי משלוח
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full text-lg"
+            disabled={stockLoaded && !isSizeAvailable(selectedSize)}
+          >
+            {stockLoaded && !isSizeAvailable(selectedSize) ? "המלאי אזל" : "המשך לפרטי משלוח"}
           </Button>
         </CardContent>
       </Card>

@@ -76,7 +76,7 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [exchanges, setExchanges] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"ORDERS" | "EXCHANGES">("ORDERS");
+  const [activeTab, setActiveTab] = useState<"ORDERS" | "EXCHANGES" | "INVENTORY">("ORDERS");
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: 50,
@@ -118,6 +118,15 @@ export default function AdminDashboard() {
   // Exchange Request
   const [creatingExchange, setCreatingExchange] = useState(false);
   const [exchangeLink, setExchangeLink] = useState<string | null>(null);
+
+  // Inventory
+  const [inventory, setInventory] = useState<
+    { size: string; total: number; reserved: number; sold: number; available: number; isActive: boolean }[]
+  >([]);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [editingSize, setEditingSize] = useState<string | null>(null);
+  const [editTotalStock, setEditTotalStock] = useState(0);
+  const [updatingInventory, setUpdatingInventory] = useState(false);
 
   // Fetch orders
   const fetchOrders = async () => {
@@ -203,6 +212,62 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error("Fetch stats error:", err);
+    }
+  };
+
+  // Fetch inventory
+  const fetchInventory = async () => {
+    try {
+      setInventoryLoading(true);
+      const res = await fetch("/api/admin/inventory");
+      const data = await res.json();
+      if (data.success) {
+        setInventory(data.inventory);
+      }
+    } catch (err) {
+      console.error("Fetch inventory error:", err);
+    } finally {
+      setInventoryLoading(false);
+    }
+  };
+
+  const updateInventoryStock = async (size: string, totalStock: number) => {
+    try {
+      setUpdatingInventory(true);
+      const res = await fetch("/api/admin/inventory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ size, totalStock }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchInventory();
+        setEditingSize(null);
+        toast({ title: "המלאי עודכן בהצלחה" });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      toast({ title: "שגיאה בעדכון מלאי", variant: "destructive" });
+    } finally {
+      setUpdatingInventory(false);
+    }
+  };
+
+  const toggleSizeActive = async (size: string, isActive: boolean) => {
+    try {
+      const res = await fetch("/api/admin/inventory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ size, isActive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchInventory();
+        toast({ title: isActive ? "המידה הופעלה" : "המידה הושבתה" });
+      }
+    } catch (err) {
+      toast({ title: "שגיאה", variant: "destructive" });
     }
   };
 
@@ -480,9 +545,18 @@ export default function AdminDashboard() {
         >
           החלפות
         </button>
+        <button
+          className={`px-6 py-2 font-medium ${activeTab === "INVENTORY" ? "border-b-2 border-primary text-primary" : "text-gray-500"}`}
+          onClick={() => {
+            setActiveTab("INVENTORY");
+            fetchInventory();
+          }}
+        >
+          מלאי
+        </button>
       </div>
 
-      {activeTab === "ORDERS" ? (
+      {activeTab === "ORDERS" && (
         <>
           {/* Statistics Dashboard */}
           {stats && (
@@ -688,7 +762,9 @@ export default function AdminDashboard() {
             </div>
           )}
         </>
-      ) : (
+      )}
+
+      {activeTab === "EXCHANGES" && (
         <Card>
           <CardContent className="p-0">
             {loading ? (
@@ -748,6 +824,172 @@ export default function AdminDashboard() {
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "INVENTORY" && (
+        /* Inventory Management */
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>ניהול מלאי</CardTitle>
+                <CardDescription>עדכון כמויות מלאי לפי מידה</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchInventory}
+                disabled={inventoryLoading}
+              >
+                {inventoryLoading ? "מרענן..." : "רענן"}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {inventoryLoading && inventory.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                <p className="mt-4 text-gray-600">טוען מלאי...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {inventory.map((item) => {
+                  const pct = item.total > 0 ? Math.round((item.available / item.total) * 100) : 0;
+                  const isLow = item.available > 0 && item.available <= 10;
+                  const isOut = item.available === 0;
+
+                  return (
+                    <Card
+                      key={item.size}
+                      className={`border-2 ${
+                        isOut
+                          ? "border-red-300 bg-red-50"
+                          : isLow
+                            ? "border-orange-300 bg-orange-50"
+                            : "border-green-200 bg-green-50"
+                      }`}
+                    >
+                      <CardContent className="p-5">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold text-gray-900">{item.size}</span>
+                            <span className="text-sm text-gray-500">
+                              ({item.size === "S" ? "36" : item.size === "M" ? "38" : item.size === "L" ? "40" : "42"})
+                            </span>
+                          </div>
+                          {isOut ? (
+                            <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-700 ring-1 ring-red-200">
+                              Sold Out
+                            </span>
+                          ) : isLow ? (
+                            <span className="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-bold text-orange-700 ring-1 ring-orange-200">
+                              כמעט אזל
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+                              במלאי
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="mb-3">
+                          <div className="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>זמין</span>
+                            <span>{pct}%</span>
+                          </div>
+                          <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                isOut
+                                  ? "bg-red-500"
+                                  : isLow
+                                    ? "bg-orange-400"
+                                    : "bg-green-500"
+                              }`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Stats grid */}
+                        <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+                          <div className="rounded-lg bg-white p-2 text-center shadow-sm">
+                            <p className="text-xs text-gray-500">זמין</p>
+                            <p className={`text-lg font-bold ${isOut ? "text-red-600" : isLow ? "text-orange-600" : "text-green-600"}`}>
+                              {item.available}
+                            </p>
+                          </div>
+                          <div className="rounded-lg bg-white p-2 text-center shadow-sm">
+                            <p className="text-xs text-gray-500">סה&quot;כ</p>
+                            <p className="text-lg font-bold text-gray-700">{item.total}</p>
+                          </div>
+                          <div className="rounded-lg bg-white p-2 text-center shadow-sm">
+                            <p className="text-xs text-gray-500">שמור</p>
+                            <p className="text-lg font-bold text-blue-600">{item.reserved}</p>
+                          </div>
+                          <div className="rounded-lg bg-white p-2 text-center shadow-sm">
+                            <p className="text-xs text-gray-500">נמכר</p>
+                            <p className="text-lg font-bold text-purple-600">{item.sold}</p>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        {editingSize === item.size ? (
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              min={0}
+                              value={editTotalStock}
+                              onChange={(e) => setEditTotalStock(parseInt(e.target.value) || 0)}
+                              className="text-center"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => updateInventoryStock(item.size, editTotalStock)}
+                              disabled={updatingInventory}
+                            >
+                              {updatingInventory ? "..." : "✓"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditingSize(null)}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => {
+                                setEditingSize(item.size);
+                                setEditTotalStock(item.total);
+                              }}
+                            >
+                              ערוך מלאי
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={item.isActive ? "destructive" : "default"}
+                              onClick={() => toggleSizeActive(item.size, !item.isActive)}
+                            >
+                              {item.isActive ? "השבת" : "הפעל"}
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             )}
           </CardContent>
         </Card>
