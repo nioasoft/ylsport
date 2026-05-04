@@ -70,7 +70,7 @@ export function ShippingForm({
   };
 
   const getShippingCost = () => {
-    return shippingMethod === "STANDARD_DELIVERY" ? 20 : 0;
+    return 0;
   };
 
   const getTotal = () => {

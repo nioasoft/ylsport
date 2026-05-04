@@ -204,7 +204,7 @@ export function isValidPostalCode(postalCode: string): boolean {
  * @returns Shipping cost in ILS
  */
 export function calculateShippingCost(method: "STANDARD_DELIVERY" | "SELF_PICKUP"): number {
-  return method === "STANDARD_DELIVERY" ? 20 : 0;
+  return 0;
 }
 
 /**
@@ -278,7 +278,7 @@ export function getPaymentStatusLabel(status: string): string {
  */
 export function getShippingMethodLabel(method: string): string {
   const methodLabels: Record<string, string> = {
-    STANDARD_DELIVERY: "משלוח רגיל (₪20)",
+    STANDARD_DELIVERY: "משלוח רגיל (חינם)",
     SELF_PICKUP: "איסוף עצמי (חינם)",
   };
   return methodLabels[method] || method;

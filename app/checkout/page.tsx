@@ -15,7 +15,7 @@ interface OrderItem {
 
 type CheckoutStep = "order" | "shipping" | "processing";
 
-const PRODUCT_PRICE = 199;
+const PRODUCT_PRICE = 229;
 const PRODUCT_NAME = "YL Sport Tights";
 
 export default function CheckoutPage() {
@@ -62,12 +62,12 @@ export default function CheckoutPage() {
         })),
 
         subtotal: calculateSubtotal(),
-        shippingCost: shippingData.shippingMethod === "STANDARD_DELIVERY" ? 20 : 0,
+        shippingCost: 0,
         discountCode,
         discountAmount: discountAmount || 0,
         total:
           calculateSubtotal() +
-          (shippingData.shippingMethod === "STANDARD_DELIVERY" ? 20 : 0) -
+          0 -
           (discountAmount || 0),
       };
 

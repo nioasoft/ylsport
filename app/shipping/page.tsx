@@ -36,15 +36,10 @@ export default function ShippingPage() {
               <h3 className="text-xl font-semibold text-gray-800 mb-3">עלויות משלוח</h3>
               <div className="bg-primary-light border border-primary rounded-lg p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div className="md:col-span-2 text-center">
                     <p className="text-lg font-semibold text-gray-900 mb-2">משלוח רגיל</p>
-                    <p className="text-3xl font-bold text-primary">₪20</p>
+                    <p className="text-3xl font-bold text-primary">חינם!</p>
                     <p className="text-sm text-gray-600 mt-1">לכל רחבי הארץ</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold text-gray-900 mb-2">משלוח חינם</p>
-                    <p className="text-3xl font-bold text-primary">₪0</p>
-                    <p className="text-sm text-gray-600 mt-1">בהזמנות מעל ₪500</p>
                   </div>
                 </div>
               </div>

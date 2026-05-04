@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { formatPrice } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
-const PRODUCT_PRICE = 199;
+const PRODUCT_PRICE = 229;
 
 type Size = "S" | "M" | "L" | "XL";
 
