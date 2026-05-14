@@ -14,6 +14,7 @@ import {
   getShippingMethodLabel,
   getProductSizeLabel,
 } from "@/lib/utils";
+import { trackPurchase } from "@/lib/pixels";
 
 interface OrderItem {
   id: string;
@@ -76,6 +77,17 @@ function OrderConfirmationContent() {
 
     fetchOrder();
   }, [orderNumber]);
+
+  useEffect(() => {
+    if (!order || order.paymentStatus !== "COMPLETED") return;
+
+    const numItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+    trackPurchase({
+      value: order.total,
+      orderNumber: order.orderNumber,
+      numItems,
+    });
+  }, [order]);
 
   if (loading) {
     return <LoadingScreen message="טוען פרטי הזמנה..." />;

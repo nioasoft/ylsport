@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OrderForm } from "@/components/checkout/OrderForm";
 import { ShippingForm } from "@/components/checkout/ShippingForm";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
+import { trackAddToCart, trackInitiateCheckout } from "@/lib/pixels";
 import type { ShippingFormData } from "@/lib/validation";
 
 interface OrderItem {
@@ -33,6 +34,10 @@ export default function CheckoutPage() {
     return orderItems.reduce((sum, item) => sum + item.quantity * PRODUCT_PRICE, 0);
   };
 
+  useEffect(() => {
+    trackAddToCart({ value: PRODUCT_PRICE });
+  }, []);
+
   const handleOrderSubmit = (
     items: OrderItem[],
     discountCode?: string,
@@ -42,6 +47,11 @@ export default function CheckoutPage() {
     setDiscountCode(discountCode);
     setDiscountAmount(discountAmount);
     setStep("shipping");
+
+    const subtotal = items.reduce((sum, item) => sum + item.quantity * PRODUCT_PRICE, 0);
+    const numItems = items.reduce((sum, item) => sum + item.quantity, 0);
+    const total = subtotal - (discountAmount ?? 0);
+    trackInitiateCheckout({ value: total, numItems });
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
