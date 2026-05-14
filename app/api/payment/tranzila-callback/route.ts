@@ -5,6 +5,7 @@ import { sendOrderConfirmationEmail, sendAdminOrderNotificationEmail } from "@/l
 import { sendOrderConfirmationSMSAsync } from "@/lib/sms-templates";
 import { tranzilaCallbackSchema } from "@/lib/validation";
 import { reserveStock } from "@/lib/inventory";
+import { sendMetaCapiPurchase, sendTikTokCapiPurchase } from "@/lib/capi";
 import { ProductSize } from "@prisma/client";
 
 /**
@@ -327,6 +328,35 @@ async function processCallback(data: Record<string, unknown>) {
         console.error("Failed to create invoice:", invoiceResult.error);
       }
     })(),
+
+    // Meta Conversions API — server-side Purchase (recovers iOS / ad-blocker traffic).
+    // event_id matches the client pixel's eventID so Meta dedups the pair.
+    sendMetaCapiPurchase({
+      orderNumber: updatedOrder.orderNumber,
+      value: updatedOrder.total.toNumber(),
+      numItems: updatedOrder.items.reduce((sum, item) => sum + item.quantity, 0),
+      email: updatedOrder.customerEmail,
+      phone: updatedOrder.customerPhone,
+      fullName: updatedOrder.customerName,
+      city: updatedOrder.shippingCity,
+      postalCode: updatedOrder.shippingPostalCode,
+    }).catch((err) => {
+      console.error("Meta CAPI Purchase error:", err);
+    }),
+
+    // TikTok Events API — server-side Purchase mirror.
+    sendTikTokCapiPurchase({
+      orderNumber: updatedOrder.orderNumber,
+      value: updatedOrder.total.toNumber(),
+      numItems: updatedOrder.items.reduce((sum, item) => sum + item.quantity, 0),
+      email: updatedOrder.customerEmail,
+      phone: updatedOrder.customerPhone,
+      fullName: updatedOrder.customerName,
+      city: updatedOrder.shippingCity,
+      postalCode: updatedOrder.shippingPostalCode,
+    }).catch((err) => {
+      console.error("TikTok Events API Purchase error:", err);
+    }),
   ]);
 
   return NextResponse.json({

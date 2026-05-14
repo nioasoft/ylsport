@@ -1,9 +1,9 @@
 /**
- * Meta (Facebook) Pixel helpers.
+ * Client-side pixel helpers — Meta (Facebook) + TikTok.
  *
- * The base pixel loader and PageView fire in `app/layout.tsx`. These helpers
- * fire e-commerce funnel events from client components. All calls are no-ops
- * during SSR / before `fbq` is on the page.
+ * The base loaders and PageView fire in `app/layout.tsx`. These wrappers fire
+ * e-commerce funnel events from client components. All calls are no-ops during
+ * SSR / before the pixel globals are on the page.
  *
  * Currency is fixed to ILS — single-market store.
  */
@@ -16,9 +16,18 @@ interface MetaPixelWindow {
   fbq?: (...args: unknown[]) => void;
 }
 
+interface TikTokPixelWindow {
+  ttq?: { track?: (event: string, params?: Record<string, unknown>, options?: { event_id?: string }) => void };
+}
+
 function fbq(): MetaPixelWindow["fbq"] | undefined {
   if (typeof window === "undefined") return undefined;
   return (window as unknown as MetaPixelWindow).fbq;
+}
+
+function ttq(): TikTokPixelWindow["ttq"] | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (window as unknown as TikTokPixelWindow).ttq;
 }
 
 export interface AddToCartParams {
@@ -32,16 +41,28 @@ export function trackAddToCart({
   contentName = DEFAULT_CONTENT_NAME,
   contentIds = [DEFAULT_CONTENT_ID],
 }: AddToCartParams): void {
-  const track = fbq();
-  if (!track) return;
+  const metaTrack = fbq();
+  if (metaTrack) {
+    metaTrack("track", "AddToCart", {
+      value,
+      currency: CURRENCY,
+      content_name: contentName,
+      content_ids: contentIds,
+      content_type: "product",
+    });
+  }
 
-  track("track", "AddToCart", {
-    value,
-    currency: CURRENCY,
-    content_name: contentName,
-    content_ids: contentIds,
-    content_type: "product",
-  });
+  const tiktokTrack = ttq()?.track;
+  if (tiktokTrack) {
+    tiktokTrack("AddToCart", {
+      value,
+      currency: CURRENCY,
+      content_id: contentIds[0],
+      content_name: contentName,
+      content_type: "product",
+      quantity: 1,
+    });
+  }
 }
 
 export interface InitiateCheckoutParams {
@@ -55,16 +76,27 @@ export function trackInitiateCheckout({
   numItems,
   contentIds = [DEFAULT_CONTENT_ID],
 }: InitiateCheckoutParams): void {
-  const track = fbq();
-  if (!track) return;
+  const metaTrack = fbq();
+  if (metaTrack) {
+    metaTrack("track", "InitiateCheckout", {
+      value,
+      currency: CURRENCY,
+      num_items: numItems,
+      content_ids: contentIds,
+      content_type: "product",
+    });
+  }
 
-  track("track", "InitiateCheckout", {
-    value,
-    currency: CURRENCY,
-    num_items: numItems,
-    content_ids: contentIds,
-    content_type: "product",
-  });
+  const tiktokTrack = ttq()?.track;
+  if (tiktokTrack) {
+    tiktokTrack("InitiateCheckout", {
+      value,
+      currency: CURRENCY,
+      content_id: contentIds[0],
+      content_type: "product",
+      quantity: numItems,
+    });
+  }
 }
 
 export interface PurchaseParams {
@@ -77,10 +109,11 @@ export interface PurchaseParams {
 /**
  * Fires Purchase exactly once per orderNumber per browser session.
  *
- * Why: the confirmation page can be refreshed or revisited; without a guard,
- * one real order would inflate Purchase counts and corrupt ad attribution.
- * `eventID` is sent so a future Conversions API integration can dedup against
- * this client-side event.
+ * The sessionStorage guard prevents inflated counts if the user refreshes
+ * the confirmation page. `eventID` / `event_id` is sent to both pixels so the
+ * matching server-side Conversions API event (fired from the Tranzila webhook)
+ * can dedup against this client event — Meta and TikTok both expect the same
+ * value on both ends to match a pair.
  */
 export function trackPurchase({
   value,
@@ -88,10 +121,7 @@ export function trackPurchase({
   numItems,
   contentIds = [DEFAULT_CONTENT_ID],
 }: PurchaseParams): void {
-  const track = fbq();
-  if (!track) return;
-
-  const storageKey = `meta_purchase_fired_${orderNumber}`;
+  const storageKey = `purchase_fired_${orderNumber}`;
   try {
     if (sessionStorage.getItem(storageKey)) return;
     sessionStorage.setItem(storageKey, "1");
@@ -100,16 +130,34 @@ export function trackPurchase({
     // fall through and still fire. Worst case: duplicate event on refresh.
   }
 
-  track(
-    "track",
-    "Purchase",
-    {
-      value,
-      currency: CURRENCY,
-      num_items: numItems,
-      content_ids: contentIds,
-      content_type: "product",
-    },
-    { eventID: orderNumber },
-  );
+  const metaTrack = fbq();
+  if (metaTrack) {
+    metaTrack(
+      "track",
+      "Purchase",
+      {
+        value,
+        currency: CURRENCY,
+        num_items: numItems,
+        content_ids: contentIds,
+        content_type: "product",
+      },
+      { eventID: orderNumber },
+    );
+  }
+
+  const tiktokTrack = ttq()?.track;
+  if (tiktokTrack) {
+    tiktokTrack(
+      "CompletePayment",
+      {
+        value,
+        currency: CURRENCY,
+        content_id: contentIds[0],
+        content_type: "product",
+        quantity: numItems,
+      },
+      { event_id: orderNumber },
+    );
+  }
 }
