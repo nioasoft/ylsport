@@ -49,33 +49,45 @@ function OrderConfirmationContent() {
       return;
     }
 
-    // Fetch order details
-    const fetchOrder = async () => {
+    // Poll for the order until Tranzila's webhook has marked paymentStatus = COMPLETED.
+    // The redirect from Tranzila races the IPN webhook; on first paint paymentStatus
+    // is usually still PENDING, which previously suppressed the Purchase pixel.
+    // Up to 15 attempts × 2s ≈ 30s, then we give up and show whatever we have.
+    let cancelled = false;
+    const MAX_ATTEMPTS = 15;
+    const POLL_INTERVAL_MS = 2000;
+
+    const fetchOrder = async (attempt: number): Promise<void> => {
       try {
         const response = await fetch(`/api/orders?orderNumber=${orderNumber}`);
-
-        if (!response.ok) {
-          throw new Error("לא ניתן לטעון את פרטי ההזמנה");
-        }
+        if (!response.ok) throw new Error("לא ניתן לטעון את פרטי ההזמנה");
 
         const data = await response.json();
+        if (!data.success) throw new Error(data.message || "הזמנה לא נמצאה");
+        if (cancelled) return;
 
-        if (data.success) {
-          setOrder(data.order);
+        setOrder(data.order);
+
+        if (data.order.paymentStatus !== "COMPLETED" && attempt < MAX_ATTEMPTS) {
+          setTimeout(() => {
+            if (!cancelled) fetchOrder(attempt + 1);
+          }, POLL_INTERVAL_MS);
         } else {
-          throw new Error(data.message || "הזמנה לא נמצאה");
+          setLoading(false);
         }
       } catch (err) {
+        if (cancelled) return;
         console.error("Order fetch error:", err);
-        setError(
-          err instanceof Error ? err.message : "אירעה שגיאה בטעינת ההזמנה"
-        );
-      } finally {
+        setError(err instanceof Error ? err.message : "אירעה שגיאה בטעינת ההזמנה");
         setLoading(false);
       }
     };
 
-    fetchOrder();
+    fetchOrder(1);
+
+    return () => {
+      cancelled = true;
+    };
   }, [orderNumber]);
 
   useEffect(() => {
