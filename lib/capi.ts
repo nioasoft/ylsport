@@ -145,36 +145,42 @@ export async function sendTikTokCapiPurchase(input: CapiPurchaseInput): Promise<
   const eventTime = input.eventTimeSeconds ?? Math.floor(Date.now() / 1000);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://yl-sport.co.il";
 
+  // Fire both Purchase (new TikTok taxonomy) and CompletePayment (legacy) so
+  // the event surfaces in Events Manager regardless of which name the
+  // advertiser's view is configured for. Same event_id on both → TikTok
+  // dedups against itself and against the client-side ttq.track Purchase.
+  const baseEvent = {
+    event_time: eventTime,
+    event_id: input.orderNumber,
+    user: {
+      email: sha256(normalizeEmail(input.email)),
+      phone: sha256(`+${normalizePhone(input.phone)}`),
+    },
+    properties: {
+      contents: [
+        {
+          content_id: DEFAULT_CONTENT_ID,
+          content_name: DEFAULT_CONTENT_NAME,
+          content_type: "product",
+          quantity: input.numItems,
+          price: input.value / Math.max(input.numItems, 1),
+        },
+      ],
+      currency: CURRENCY,
+      value: input.value,
+      order_id: input.orderNumber,
+    },
+    page: {
+      url: `${siteUrl}/order/confirmation?orderNumber=${input.orderNumber}`,
+    },
+  };
+
   const payload = {
     event_source: "web",
     event_source_id: TIKTOK_PIXEL_ID,
     data: [
-      {
-        event: "CompletePayment",
-        event_time: eventTime,
-        event_id: input.orderNumber,
-        user: {
-          email: sha256(normalizeEmail(input.email)),
-          phone: sha256(`+${normalizePhone(input.phone)}`),
-        },
-        properties: {
-          contents: [
-            {
-              content_id: DEFAULT_CONTENT_ID,
-              content_name: DEFAULT_CONTENT_NAME,
-              content_type: "product",
-              quantity: input.numItems,
-              price: input.value / Math.max(input.numItems, 1),
-            },
-          ],
-          currency: CURRENCY,
-          value: input.value,
-          order_id: input.orderNumber,
-        },
-        page: {
-          url: `${siteUrl}/order/confirmation?orderNumber=${input.orderNumber}`,
-        },
-      },
+      { event: "Purchase", ...baseEvent },
+      { event: "CompletePayment", ...baseEvent },
     ],
   };
 

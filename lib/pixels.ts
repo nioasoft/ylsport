@@ -148,16 +148,25 @@ export function trackPurchase({
 
   const tiktokTrack = ttq()?.track;
   if (tiktokTrack) {
-    tiktokTrack(
-      "CompletePayment",
-      {
-        value,
-        currency: CURRENCY,
-        content_id: contentIds[0],
-        content_type: "product",
-        quantity: numItems,
-      },
-      { event_id: orderNumber },
-    );
+    // TikTok renamed Purchase from "CompletePayment" → "Purchase" in the new
+    // Events Manager taxonomy, but legacy CompletePayment is still accepted.
+    // Fire both so the event shows up under whichever label the advertiser's
+    // Events Manager UI is on. Both share the same event_id, so TikTok dedups
+    // them against each other and against the server-side CAPI event.
+    const tiktokParams = {
+      value,
+      currency: CURRENCY,
+      contents: [
+        {
+          content_id: contentIds[0],
+          content_name: DEFAULT_CONTENT_NAME,
+          content_type: "product",
+          quantity: numItems,
+          price: value / Math.max(numItems, 1),
+        },
+      ],
+    };
+    tiktokTrack("Purchase", tiktokParams, { event_id: orderNumber });
+    tiktokTrack("CompletePayment", tiktokParams, { event_id: orderNumber });
   }
 }
