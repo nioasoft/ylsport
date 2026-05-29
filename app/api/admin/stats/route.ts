@@ -23,6 +23,8 @@ export async function GET() {
       monthlyRevenueResult,
       pendingProcessing,
       staleShipped,
+      abandonedCount,
+      failedCount,
     ] = await Promise.all([
       // Total orders count (all active orders)
       prisma.order.count({
@@ -90,6 +92,20 @@ export async function GET() {
           },
         },
       }),
+
+      // Abandoned orders (created, never paid, expired by cron)
+      prisma.order.count({
+        where: {
+          status: "ABANDONED",
+        },
+      }),
+
+      // Failed/cancelled payments (declined at Tranzila or otherwise cancelled)
+      prisma.order.count({
+        where: {
+          OR: [{ status: "CANCELLED" }, { paymentStatus: "FAILED" }],
+        },
+      }),
     ]);
 
     const totalRevenue = totalRevenueResult._sum.total?.toNumber() || 0;
@@ -104,6 +120,8 @@ export async function GET() {
         monthlyRevenue,
         pendingProcessing,
         staleShipped,
+        abandonedCount,
+        failedCount,
       },
     });
   } catch (error) {

@@ -67,6 +67,41 @@ interface TranzilaInvoiceResponse {
   error?: string;
 }
 
+/**
+ * A single transaction as returned by the Reports API, normalized for our use.
+ * Source endpoint: POST https://api.tranzila.com/v1/transactions
+ */
+export interface TranzilaTransaction {
+  /** Transaction index (Tranzila's per-terminal transaction id) */
+  index: string;
+  /** YYYY-MM-DD */
+  date: string;
+  /** HH:MM:SS (terminal local time) */
+  time: string;
+  /** Amount in ILS (converted from agorot) */
+  amount: number;
+  /** Processor response code; "000" = approved */
+  responseCode: string;
+  /** True when responseCode === "000" */
+  approved: boolean;
+  /** Transaction type, e.g. "FORCE" for manually-keyed charges */
+  txnType: string;
+  /** Card description / brand (e.g. "MAX", "Visa") */
+  cardDescription: string;
+  /** Customer name from user_defined_1 */
+  customerName: string;
+  /** Customer email from user_defined_3 */
+  customerEmail: string;
+  /** Customer phone from user_defined_5 (e.g. "972501234567") */
+  customerPhone: string;
+}
+
+interface TranzilaTransactionsResult {
+  success: boolean;
+  transactions: TranzilaTransaction[];
+  error?: string;
+}
+
 // ============================================================================
 // RESPONSE CODES
 // ============================================================================
@@ -511,6 +546,72 @@ export class TranzilaSDK {
       console.error('Tranzila createInvoice error:', error);
       return {
         success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Retrieve transactions from the Reports API for a date range.
+   * Endpoint: POST https://api.tranzila.com/v1/transactions
+   * Used for admin reconciliation (matching Tranzila charges against DB orders).
+   *
+   * @param startDate - inclusive range start, format YYYY-MM-DD
+   * @param endDate - inclusive range end, format YYYY-MM-DD
+   */
+  async getTransactions(startDate: string, endDate: string): Promise<TranzilaTransactionsResult> {
+    const endpoint = `${this.apiHost}/v1/transactions`;
+    const payload = {
+      terminal_name: this.terminalName,
+      transaction_start_date: startDate,
+      transaction_end_date: endDate,
+    };
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: this.generateAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        console.error(`Tranzila getTransactions HTTP ${response.status}: ${responseText.substring(0, 300)}`);
+        return { success: false, transactions: [], error: `HTTP ${response.status}` };
+      }
+
+      let data: any;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        console.error('Tranzila getTransactions: invalid JSON response:', responseText.substring(0, 300));
+        return { success: false, transactions: [], error: 'Invalid response from Tranzila' };
+      }
+
+      // The report wraps the array under `transactions` (occasionally under Body/body).
+      const raw: any[] = data.transactions || data.Body?.transactions || data.body?.transactions || [];
+
+      const transactions: TranzilaTransaction[] = raw.map((t) => ({
+        index: String(t.index ?? ''),
+        date: String(t.transaction_date ?? ''),
+        time: String(t.transaction_time ?? ''),
+        amount: Number(t.amount ?? 0) / 100,
+        responseCode: String(t.processor_response_code ?? ''),
+        approved: String(t.processor_response_code ?? '') === '000',
+        txnType: String(t.txn_type ?? ''),
+        cardDescription: String(t.card_description ?? t.card_type ?? ''),
+        customerName: String(t.user_defined_1 ?? ''),
+        customerEmail: String(t.user_defined_3 ?? ''),
+        customerPhone: String(t.user_defined_5 ?? ''),
+      }));
+
+      return { success: true, transactions };
+    } catch (error) {
+      console.error('Tranzila getTransactions error:', error);
+      return {
+        success: false,
+        transactions: [],
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }

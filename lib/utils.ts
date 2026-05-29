@@ -256,6 +256,8 @@ export function getOrderStatusLabel(status: string): string {
     SHIPPED: "נשלח",
     DELIVERED: "נמסר",
     CANCELLED: "בוטל",
+    REFUNDED: "הוחזר",
+    ABANDONED: "ננטש / לא הושלם",
   };
   return statusLabels[status] || status;
 }

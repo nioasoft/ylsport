@@ -37,6 +37,7 @@ enum OrderStatus {
   DELIVERED        // Order delivered to customer
   CANCELLED        // Order cancelled (by customer or admin)
   REFUNDED         // Order refunded (payment returned to customer)
+  ABANDONED        // Created but never paid; expired without a Tranzila confirmation (set by cleanup cron instead of hard-delete)
 
   @@map("order_status")
 }

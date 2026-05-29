@@ -72,6 +72,21 @@ interface Pagination {
   totalPages: number;
 }
 
+/** A Tranzila transaction as returned by the reconciliation endpoint. */
+interface ReconcileTxn {
+  index: string;
+  date: string;
+  time: string;
+  amount: number;
+  responseCode: string;
+  approved: boolean;
+  txnType: string;
+  cardDescription: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -102,6 +117,21 @@ export default function AdminDashboard() {
     monthlyRevenue: number;
     pendingProcessing: number;
     staleShipped: number;
+    abandonedCount: number;
+    failedCount: number;
+  } | null>(null);
+
+  // Tranzila reconciliation (read-only diagnostic)
+  const [reconciling, setReconciling] = useState(false);
+  const [reconcileError, setReconcileError] = useState<string | null>(null);
+  const [reconcileResult, setReconcileResult] = useState<{
+    range: { from: string; to: string };
+    counts: { transactions: number; matched: number; paymentFoundNotPaid: number; unmatchedCharges: number };
+    result: {
+      matched: { transaction: ReconcileTxn; orderNumber: string; orderStatus: string }[];
+      paymentFoundNotPaid: { transaction: ReconcileTxn; orderNumber: string; orderStatus: string }[];
+      unmatchedCharges: ReconcileTxn[];
+    };
   } | null>(null);
 
   // Last refresh time
@@ -212,6 +242,26 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error("Fetch stats error:", err);
+    }
+  };
+
+  // Run Tranzila reconciliation (read-only): match Tranzila charges against DB orders
+  const runReconcile = async () => {
+    try {
+      setReconciling(true);
+      setReconcileError(null);
+      const response = await fetch("/api/admin/reconcile");
+      const data = await response.json();
+      if (data.success) {
+        setReconcileResult(data);
+      } else {
+        setReconcileError(data.error || "ההצלבה נכשלה");
+      }
+    } catch (err) {
+      console.error("Reconcile error:", err);
+      setReconcileError("אירעה שגיאה בהצלבה מול Tranzila");
+    } finally {
+      setReconciling(false);
     }
   };
 
@@ -476,6 +526,8 @@ export default function AdminDashboard() {
         return "bg-red-100 text-red-800";
       case "REFUNDED":
         return "bg-violet-100 text-violet-800";
+      case "ABANDONED":
+        return "bg-orange-100 text-orange-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -498,6 +550,8 @@ export default function AdminDashboard() {
         return "בוטל";
       case "REFUNDED":
         return "הוחזר";
+      case "ABANDONED":
+        return "ננטש / לא הושלם";
       default:
         return status;
     }
@@ -525,6 +579,16 @@ export default function AdminDashboard() {
           >
             {loading ? "מרענן..." : "רענן עכשיו"}
           </Button>
+          {activeTab === "ORDERS" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={runReconcile}
+              disabled={reconciling}
+            >
+              {reconciling ? "מסנכרן..." : "סנכרן מול Tranzila"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -562,8 +626,11 @@ export default function AdminDashboard() {
           {stats && (
             <div className="space-y-4">
               {/* ... existing stats ... */}
-              {(stats.pendingProcessing > 0 || stats.staleShipped > 0) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(stats.pendingProcessing > 0 ||
+                stats.staleShipped > 0 ||
+                stats.abandonedCount > 0 ||
+                stats.failedCount > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {stats.pendingProcessing > 0 && (
                     <Card className="border-orange-300 bg-orange-50">
                       <CardContent className="p-4">
@@ -579,6 +646,24 @@ export default function AdminDashboard() {
                         <p className="text-sm text-red-700 font-medium">תקועות במשלוח</p>
                         <p className="text-3xl font-bold text-red-600">{stats.staleShipped}</p>
                         <p className="text-xs text-red-600 mt-1">נשלחו לפני יותר מ-10 ימים</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {stats.failedCount > 0 && (
+                    <Card className="border-red-300 bg-red-50">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-red-700 font-medium">תשלומים שנכשלו</p>
+                        <p className="text-3xl font-bold text-red-600">{stats.failedCount}</p>
+                        <p className="text-xs text-red-600 mt-1">נדחו בסליקה ב-Tranzila</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {stats.abandonedCount > 0 && (
+                    <Card className="border-orange-300 bg-orange-50">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-orange-700 font-medium">עגלות ננטשו</p>
+                        <p className="text-3xl font-bold text-orange-600">{stats.abandonedCount}</p>
+                        <p className="text-xs text-orange-600 mt-1">נוצרו אך התשלום לא הושלם</p>
                       </CardContent>
                     </Card>
                   )}
@@ -615,6 +700,72 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* Tranzila Reconciliation Report (read-only) */}
+          {reconcileError && (
+            <Card className="border-red-300 bg-red-50">
+              <CardContent className="p-4 text-sm text-red-700">{reconcileError}</CardContent>
+            </Card>
+          )}
+          {reconcileResult && (
+            <Card>
+              <CardHeader>
+                <CardTitle>סנכרון מול Tranzila</CardTitle>
+                <CardDescription>
+                  {reconcileResult.range.from} עד {reconcileResult.range.to} ·{" "}
+                  {reconcileResult.counts.transactions} עסקאות ב-Tranzila · {reconcileResult.counts.matched} תואמות
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Payment found but order not paid — recoverable (missed callback) */}
+                {reconcileResult.result.paymentFoundNotPaid.length > 0 && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded">
+                    <p className="font-semibold text-red-700 text-sm mb-2">
+                      🔴 כסף נכנס אך ההזמנה לא מסומנת כשולמה ({reconcileResult.result.paymentFoundNotPaid.length}) — צריך טיפול ידני
+                    </p>
+                    <div className="space-y-1 text-xs">
+                      {reconcileResult.result.paymentFoundNotPaid.map((m) => (
+                        <div key={m.transaction.index} className="flex flex-wrap gap-x-3 text-gray-700">
+                          <span className="font-medium">הזמנה #{m.orderNumber}</span>
+                          <span>({getStatusText(m.orderStatus)})</span>
+                          <span>₪{m.transaction.amount.toFixed(2)}</span>
+                          <span>{m.transaction.date} {m.transaction.time}</span>
+                          <span>{m.transaction.customerName}</span>
+                          <span>אסמכתא Tranzila: {m.transaction.index}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Unmatched charges — manual/FORCE charges not tied to any order */}
+                {reconcileResult.result.unmatchedCharges.length > 0 && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="font-semibold text-yellow-800 text-sm mb-2">
+                      🟡 חיובים ב-Tranzila ללא הזמנה תואמת ({reconcileResult.result.unmatchedCharges.length}) — חיובים ידניים / לא מתועדים
+                    </p>
+                    <div className="space-y-1 text-xs">
+                      {reconcileResult.result.unmatchedCharges.map((t) => (
+                        <div key={t.index} className="flex flex-wrap gap-x-3 text-gray-700">
+                          <span>₪{t.amount.toFixed(2)}</span>
+                          <span>{t.date} {t.time}</span>
+                          <span>{t.customerName || "—"}</span>
+                          <span>{t.customerEmail || "—"}</span>
+                          {t.txnType === "FORCE" && <span className="text-yellow-700">(חיוב ידני)</span>}
+                          <span>אסמכתא: {t.index}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {reconcileResult.result.paymentFoundNotPaid.length === 0 &&
+                  reconcileResult.result.unmatchedCharges.length === 0 && (
+                    <p className="text-sm text-green-700">✅ הכל תקין — כל החיובים ב-Tranzila תואמים להזמנות משולמות.</p>
+                  )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Filters */}
           <Card>
             <CardHeader>
@@ -638,6 +789,7 @@ export default function AdminDashboard() {
                       <SelectItem value="DELIVERED">נמסר</SelectItem>
                       <SelectItem value="CANCELLED">בוטל</SelectItem>
                       <SelectItem value="REFUNDED">הוחזר</SelectItem>
+                      <SelectItem value="ABANDONED">ננטש / לא הושלם</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -710,8 +862,10 @@ export default function AdminDashboard() {
                               <Badge className={getStatusColor(order.status)}>
                                 {getStatusText(order.status)}
                               </Badge>
-                              {order.status === "CANCELLED" && order.cancellationReason && (
-                                <p className="text-xs text-red-600 mt-1">{order.cancellationReason}</p>
+                              {(order.status === "CANCELLED" || order.status === "ABANDONED") && (
+                                <p className="text-xs text-red-600 mt-1">
+                                  {order.cancellationReason || (order.status === "ABANDONED" ? "ננטש לפני השלמת תשלום" : "")}
+                                </p>
                               )}
                             </div>
                           </TableCell>
@@ -1079,11 +1233,16 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Cancellation Reason */}
-              {selectedOrder.status === "CANCELLED" && selectedOrder.cancellationReason && (
+              {/* Cancellation / Abandonment Reason */}
+              {(selectedOrder.status === "CANCELLED" || selectedOrder.status === "ABANDONED") && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded text-sm">
-                  <span className="font-semibold">סיבת ביטול: </span>
-                  {selectedOrder.cancellationReason}
+                  <span className="font-semibold">
+                    {selectedOrder.status === "ABANDONED" ? "סיבת אי-השלמה: " : "סיבת ביטול: "}
+                  </span>
+                  {selectedOrder.cancellationReason ||
+                    (selectedOrder.status === "ABANDONED"
+                      ? "הלקוח לא השלים את התשלום (לא התקבל אישור מ-Tranzila)"
+                      : "")}
                 </div>
               )}
 
