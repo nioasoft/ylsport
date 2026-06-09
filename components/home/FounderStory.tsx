@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
+import { PriceCallout } from "@/components/home/PriceCallout";
 
 export function FounderStory() {
   return (
@@ -25,6 +26,10 @@ export function FounderStory() {
                 <span className="text-primary font-bold">ושיגרום לך לשרוף פי 2 בכל אימון!</span>
               </p>
             </div>
+
+            {/* Limited-time price offer — permanent, early in the flow */}
+            <PriceCallout />
+
             {/* Product Video - Larger (Increased height by 20%) */}
             <div className="relative h-[600px] lg:h-[720px] w-full overflow-hidden rounded-2xl shadow-2xl bg-black">
               <video
