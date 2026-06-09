@@ -1,17 +1,28 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { formatPrice } from "@/lib/utils";
+import { PRODUCT_ORIGINAL_PRICE, PRODUCT_PRICE } from "@/lib/constants";
 
 /**
  * Mobile Sticky CTA Bar
  *
- * Shows a sticky bottom bar on mobile devices with a "Buy Now" button
- * - Always visible on mobile
+ * Shows a sticky bottom bar on mobile devices with the price + a "Buy Now" button
+ * - Always visible on mobile (so the price is surfaced immediately)
  * - Hidden on desktop (lg:hidden)
  */
 export function MobileStickyBar() {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4 pointer-events-none">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4 pointer-events-none lg:hidden">
       <div className="bg-white/95 backdrop-blur-sm border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.15)] rounded-2xl px-4 pt-3 pb-4 w-full max-w-md pointer-events-auto mb-2">
+        {/* Price */}
+        <div className="flex items-baseline justify-center gap-2 mb-2">
+          <span className="text-xl font-bold text-primary">
+            {formatPrice(PRODUCT_PRICE)}
+          </span>
+          <span className="text-sm text-gray-500 line-through">
+            {formatPrice(PRODUCT_ORIGINAL_PRICE)}
+          </span>
+        </div>
         <Link href="/checkout">
           <Button
             size="lg"

@@ -5,10 +5,14 @@ import { Hero } from "@/components/home/Hero";
 import { ProductShowcase } from "@/components/home/ProductShowcase";
 import { Testimonials } from "@/components/home/Testimonials";
 import { MobileStickyBar } from "@/components/home/MobileStickyBar";
+import { TopPriceBar } from "@/components/home/TopPriceBar";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen">
+      {/* Desktop sticky price bar — reveals on scroll */}
+      <TopPriceBar />
+
       {/* Content-First Approach: Story → Education → Product */}
       <FounderStory />
       <TechnologySection />
