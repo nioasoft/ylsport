@@ -13,7 +13,7 @@ interface PriceCalloutProps {
 }
 
 /**
- * Static, inline price-offer box ("עכשיו במבצע ₪229 במקום ₪399").
+ * Static, inline price-offer box ("עכשיו במבצע ₪199 במקום ₪399").
  *
  * Unlike the floating TopPriceBar, this is permanent in-content text — meant to
  * surface the offer early within the page flow. Self-contained and reusable;

@@ -106,37 +106,48 @@ export type DiscountCodeData = z.infer<typeof discountCodeSchema>;
 // ============================================================================
 // ORDER CREATION VALIDATION
 // ============================================================================
-
-// Full order item schema for API (includes all fields)
-export const fullOrderItemSchema = z.object({
-  productName: z.string(),
-  productSize: productSizeSchema,
-  quantity: productQuantitySchema,
-  pricePerUnit: z.number().positive("מחיר ליחידה חייב להיות חיובי"),
-  totalPrice: z.number().positive("מחיר כולל חייב להיות חיובי"),
-});
+//
+// SECURITY: Price fields (subtotal, shippingCost, discountAmount, total,
+// pricePerUnit, totalPrice) are intentionally ABSENT from the client payload.
+// The server derives them via `computeOrderPricing` in `lib/pricing.ts`. Any
+// price sent by the client is silently ignored. See Iron Law #4 (BOLA).
 
 export const createOrderSchema = z.object({
   // Customer & Shipping Info
   ...shippingFormSchema.shape,
 
-  // Order Items (with all details)
+  // Order Items — sizes and quantities only, no prices
   items: z
-    .array(fullOrderItemSchema)
+    .array(orderItemSchema)
     .min(1, "חייבת להיות לפחות פריט אחד בהזמנה")
     .max(10, "מקסימום 10 פריטים בהזמנה"),
 
-  // Optional Discount Code
+  // Optional Discount Code (server looks it up and validates it)
   discountCode: z.string().optional(),
-
-  // Pricing (will be calculated server-side but validated)
-  subtotal: z.number().positive("סכום ביניים חייב להיות חיובי"),
-  shippingCost: z.number().nonnegative("עלות משלוח לא יכולה להיות שלילית"),
-  discountAmount: z.number().nonnegative("סכום הנחה לא יכול להיות שלילי").default(0),
-  total: z.number().positive("סכום כולל חייב להיות חיובי"),
 });
 
 export type CreateOrderData = z.infer<typeof createOrderSchema>;
+
+// ============================================================================
+// EXCHANGE PAYMENT VALIDATION
+// ============================================================================
+//
+// SECURITY: The exchange fee amount (₪29) is NOT part of this schema. It is
+// hardcoded server-side in `app/api/exchanges/pay/route.ts` and verified in
+// the callback. The client cannot influence the amount charged.
+
+export const exchangePaySchema = z.object({
+  token: z
+    .string()
+    .min(1, "טוקן חסר")
+    .max(255, "טוקן ארוך מדי"),
+  returnItem: z.string().max(50, "פריט החזרה ארוך מדי").optional(),
+  requestedItem: z.string().max(50, "פריט מבוקש ארוך מדי").optional(),
+  note: z.string().max(1000, "הערה ארוכה מדי").optional(),
+  returnReason: z.string().max(500, "סיבת החזרה ארוכה מדי").optional(),
+});
+
+export type ExchangePayData = z.infer<typeof exchangePaySchema>;
 
 // ============================================================================
 // ADMIN AUTHENTICATION VALIDATION

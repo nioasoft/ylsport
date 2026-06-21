@@ -16,8 +16,7 @@ interface OrderItem {
 
 type CheckoutStep = "order" | "shipping" | "processing";
 
-const PRODUCT_PRICE = 229;
-const PRODUCT_NAME = "YL Sport Tights";
+const PRODUCT_PRICE = 199;
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -63,22 +62,16 @@ export default function CheckoutPage() {
       const orderData = {
         ...shippingData,
 
+        // SECURITY: Prices are NOT sent to the server — the server computes
+        // them via `computeOrderPricing` in `lib/pricing.ts` using sizes +
+        // quantities + shipping method + discount code only. Sending prices
+        // here was a BOLA vulnerability (Iron Law #4).
         items: orderItems.map((item) => ({
-          productName: PRODUCT_NAME,
           productSize: item.size,
           quantity: item.quantity,
-          pricePerUnit: PRODUCT_PRICE,
-          totalPrice: item.quantity * PRODUCT_PRICE,
         })),
 
-        subtotal: calculateSubtotal(),
-        shippingCost: 0,
         discountCode,
-        discountAmount: discountAmount || 0,
-        total:
-          calculateSubtotal() +
-          0 -
-          (discountAmount || 0),
       };
 
       // Create order via API

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTranzilaSDK } from "@/lib/tranzila";
 import { createOrderSchema } from "@/lib/validation";
+import { computeOrderPricing, type DiscountForPricing } from "@/lib/pricing";
 import { generateOrderNumber } from "@/lib/utils";
 import { getAdminSession } from "@/lib/auth";
 import { getAvailableStock } from "@/lib/inventory";
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     let discountCodeId: string | null = null;
+    let discountForPricing: DiscountForPricing | null = null;
 
     if (data.discountCode) {
       const discount = await prisma.discountCode.findUnique({
@@ -98,12 +100,26 @@ export async function POST(request: NextRequest) {
       }
 
       discountCodeId = discount.id;
+      discountForPricing = {
+        type: discount.type,
+        value: discount.value.toNumber(),
+      };
 
       await prisma.discountCode.update({
         where: { id: discount.id },
         data: { usageCount: { increment: 1 } },
       });
     }
+
+    // ========================================================================
+    // SERVER-SIDE PRICING — every price field is computed here, never trusted
+    // from the client. See lib/pricing.ts and Iron Law #4 (BOLA).
+    // ========================================================================
+    const pricing = computeOrderPricing({
+      items: data.items,
+      shippingMethod: data.shippingMethod,
+      discountCode: discountForPricing,
+    });
 
     const orderCount = await prisma.order.count();
     const orderNumber = generateOrderNumber(orderCount);
@@ -121,10 +137,10 @@ export async function POST(request: NextRequest) {
         shippingPostalCode: data.shippingPostalCode || "0000000",
         shippingMethod: data.shippingMethod,
 
-        subtotal: data.subtotal,
-        shippingCost: data.shippingCost,
-        discountAmount: data.discountAmount,
-        total: data.total,
+        subtotal: pricing.subtotal,
+        shippingCost: pricing.shippingCost,
+        discountAmount: pricing.discountAmount,
+        total: pricing.total,
 
         status: "PENDING_PAYMENT",
         paymentStatus: "PENDING",
@@ -132,9 +148,9 @@ export async function POST(request: NextRequest) {
         discountCodeId,
 
         items: {
-          create: data.items.map((item) => ({
+          create: pricing.items.map((item) => ({
             productName: item.productName,
-            productSize: item.productSize,
+            productSize: item.productSize as ProductSize,
             quantity: item.quantity,
             pricePerUnit: item.pricePerUnit,
             totalPrice: item.totalPrice,

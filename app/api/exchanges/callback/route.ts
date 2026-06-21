@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTranzilaSDK } from "@/lib/tranzila";
+import { EXCHANGE_FEE } from "@/lib/constants";
 
 async function handler(request: Request) {
   try {
@@ -45,7 +46,7 @@ async function handler(request: Request) {
     const tranzila = getTranzilaSDK();
     
     // 4. Verify Payment
-    const verification = tranzila.verifyCallback(callbackData, 29.00);
+    const verification = tranzila.verifyCallback(callbackData, EXCHANGE_FEE);
 
     if (!verification.success) {
       console.error("Exchange payment verification failed:", verification.message);
