@@ -1,34 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const sizeData = [
-  {
-    size: "S-36",
-    waist: "60-65",
-    hips: "85-90",
-    inseam: "70",
-    weight: "45-55",
-  },
-  {
-    size: "M-38",
-    waist: "66-71",
-    hips: "91-96",
-    inseam: "72",
-    weight: "56-65",
-  },
-  {
-    size: "L-40",
-    waist: "72-77",
-    hips: "97-102",
-    inseam: "74",
-    weight: "66-75",
-  },
-  {
-    size: "XL-42",
-    waist: "78-85",
-    hips: "103-110",
-    inseam: "76",
-    weight: "76-85",
-  },
+  { size: "S-36", waist: "66-70", hips: "92-96" },
+  { size: "M-38", waist: "71-76", hips: "97-102" },
+  { size: "L-40", waist: "77-82", hips: "103-108" },
+  { size: "XL-42", waist: "83-88", hips: "109-114" },
 ];
 
 const fittingTips = [
@@ -91,12 +67,6 @@ export function SizeGuide() {
                       <th className="px-4 py-3 text-sm font-semibold text-gray-900">
                         היקף ירכיים
                       </th>
-                      <th className="px-4 py-3 text-sm font-semibold text-gray-900">
-                        אורך פנימי
-                      </th>
-                      <th className="px-4 py-3 text-sm font-semibold text-gray-900">
-                        משקל מומלץ (ק&quot;ג)
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -109,12 +79,6 @@ export function SizeGuide() {
                           {row.waist}
                         </td>
                         <td className="px-4 py-4 text-gray-700">{row.hips}</td>
-                        <td className="px-4 py-4 text-gray-700">
-                          {row.inseam}
-                        </td>
-                        <td className="px-4 py-4 text-gray-700">
-                          {row.weight}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -139,14 +103,6 @@ export function SizeGuide() {
                       <div className="flex justify-between">
                         <span className="text-gray-600">היקף ירכיים:</span>
                         <span className="font-medium">{row.hips} ס&quot;מ</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">אורך פנימי:</span>
-                        <span className="font-medium">{row.inseam} ס&quot;מ</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">משקל מומלץ:</span>
-                        <span className="font-medium">{row.weight} ק&quot;ג</span>
                       </div>
                     </div>
                   </div>
@@ -198,14 +154,6 @@ export function SizeGuide() {
                   </span>
                   <span className="text-gray-700">
                     מדדי בחלק הרחב ביותר של הירכיים והישבן
-                  </span>
-                </div>
-                <div className="flex gap-3">
-                  <span className="font-semibold text-primary min-w-[120px]">
-                    אורך פנימי:
-                  </span>
-                  <span className="text-gray-700">
-                    מדדי מהמפשעה ועד לקרסול
                   </span>
                 </div>
               </div>

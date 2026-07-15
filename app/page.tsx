@@ -1,4 +1,5 @@
 import { FounderStory } from "@/components/home/FounderStory";
+import { SizeGuide } from "@/components/home/SizeGuide";
 import { TechnologySection } from "@/components/home/TechnologySection";
 import { ProductBenefits } from "@/components/home/ProductBenefits";
 import { Hero } from "@/components/home/Hero";
@@ -15,6 +16,10 @@ export default function HomePage() {
 
       {/* Content-First Approach: Story → Education → Product */}
       <FounderStory />
+
+      {/* Size guide — surfaced early, right after the video/story section */}
+      <SizeGuide />
+
       <TechnologySection />
       <ProductBenefits />
 
