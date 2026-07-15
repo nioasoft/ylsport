@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { formatPrice } from "@/lib/utils";
+import { PRODUCT_ORIGINAL_PRICE, PRODUCT_PRICE } from "@/lib/constants";
 
 export function Hero() {
   return (
@@ -25,8 +27,8 @@ export function Hero() {
               {/* Price */}
               <div className="text-center lg:text-right">
                 <p className="text-sm text-gray-600">מחיר מבצע</p>
-                <p className="text-4xl font-bold text-primary">₪229</p>
-                <p className="text-sm text-gray-600 line-through">₪399</p>
+                <p className="text-4xl font-bold text-primary">{formatPrice(PRODUCT_PRICE)}</p>
+                <p className="text-sm text-gray-600 line-through">{formatPrice(PRODUCT_ORIGINAL_PRICE)}</p>
               </div>
 
               {/* CTA Button */}
