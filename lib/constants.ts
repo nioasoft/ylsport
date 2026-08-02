@@ -12,7 +12,7 @@
 // should be converged onto these constants in a future, separately-tested pass.
 
 /** Current sale price in ILS. */
-export const PRODUCT_PRICE = 199;
+export const PRODUCT_PRICE = 99;
 
 /** Original (pre-discount) price in ILS, shown struck-through. */
 export const PRODUCT_ORIGINAL_PRICE = 399;

@@ -19,8 +19,6 @@ import { formatPrice, getShippingMethodLabel } from "@/lib/utils";
 
 interface ShippingFormProps {
   subtotal: number;
-  discountCode?: string;
-  discountAmount?: number;
   onSubmit: (data: ShippingFormData) => void;
   onBack: () => void;
 }
@@ -40,13 +38,7 @@ const SHIPPING_METHODS = [
   },
 ];
 
-export function ShippingForm({
-  subtotal,
-  discountCode,
-  discountAmount,
-  onSubmit,
-  onBack,
-}: ShippingFormProps) {
+export function ShippingForm({ subtotal, onSubmit, onBack }: ShippingFormProps) {
   const [shippingMethod, setShippingMethod] = useState<"STANDARD_DELIVERY" | "SELF_PICKUP">(
     "STANDARD_DELIVERY"
   );
@@ -74,7 +66,7 @@ export function ShippingForm({
   };
 
   const getTotal = () => {
-    return subtotal + getShippingCost() - (discountAmount || 0);
+    return subtotal + getShippingCost();
   };
 
   const onFormSubmit = (data: ShippingFormData) => {
@@ -274,12 +266,6 @@ export function ShippingForm({
               {getShippingCost() === 0 ? "חינם" : formatPrice(getShippingCost())}
             </span>
           </div>
-          {discountAmount && discountAmount > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
-              <span>הנחה ({discountCode}):</span>
-              <span className="font-semibold">-{formatPrice(discountAmount)}</span>
-            </div>
-          )}
           <div className="flex justify-between border-t pt-3 text-lg">
             <span className="font-bold">סה&quot;כ לתשלום:</span>
             <span className="text-2xl font-bold text-primary">{formatPrice(getTotal())}</span>

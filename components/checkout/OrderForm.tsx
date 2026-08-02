@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatPrice } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 
-const PRODUCT_PRICE = 199;
+const PRODUCT_PRICE = 99;
 
 type Size = "S" | "M" | "L" | "XL";
 
@@ -22,7 +21,7 @@ interface SizeStock {
 }
 
 interface OrderFormProps {
-  onSubmit: (items: OrderItem[], discountCode?: string, discountAmount?: number) => void;
+  onSubmit: (items: OrderItem[]) => void;
 }
 
 export function OrderForm({ onSubmit }: OrderFormProps) {
@@ -36,18 +35,6 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
     XL: { available: 0, isActive: true },
   });
   const [stockLoaded, setStockLoaded] = useState(false);
-
-  const [discountCode, setDiscountCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<{
-    code: string;
-    amount: number;
-    newTotal: number;
-  } | null>(null);
-  const [validatingDiscount, setValidatingDiscount] = useState(false);
-  const [discountMessage, setDiscountMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
 
   // Fetch inventory on mount
   useEffect(() => {
@@ -99,60 +86,9 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
     return quantity * PRODUCT_PRICE;
   };
 
-  const handleApplyDiscount = async () => {
-    if (!discountCode.trim()) {
-      setDiscountMessage({ type: "error", text: "נא להזין קוד הנחה" });
-      return;
-    }
-
-    setValidatingDiscount(true);
-    setDiscountMessage(null);
-
-    try {
-      const response = await fetch("/api/discounts/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code: discountCode,
-          orderSubtotal: calculateSubtotal(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.valid) {
-        setAppliedDiscount({
-          code: data.discount.code,
-          amount: data.discount.discountAmount,
-          newTotal: data.discount.newTotal,
-        });
-        setDiscountMessage({ type: "success", text: "קוד הנחה הוחל בהצלחה!" });
-      } else {
-        setAppliedDiscount(null);
-        setDiscountMessage({ type: "error", text: data.error });
-      }
-    } catch (error) {
-      console.error("Discount validation error:", error);
-      setDiscountMessage({ type: "error", text: "שגיאה באימות קוד ההנחה" });
-    } finally {
-      setValidatingDiscount(false);
-    }
-  };
-
-  const handleRemoveDiscount = () => {
-    setDiscountCode("");
-    setAppliedDiscount(null);
-    setDiscountMessage(null);
-  };
-
-  const calculateFinalTotal = () => {
-    const subtotal = calculateSubtotal();
-    return appliedDiscount ? appliedDiscount.newTotal : subtotal;
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit([{ size: selectedSize, quantity }], appliedDiscount?.code, appliedDiscount?.amount);
+    onSubmit([{ size: selectedSize, quantity }]);
   };
 
   const sizeLabels: Record<Size, string> = { S: "S (36)", M: "M (38)", L: "L (40)", XL: "XL (42)" };
@@ -263,57 +199,6 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
             </div>
           </div>
 
-          {/* Discount Code */}
-          <div className="space-y-2">
-            <Label htmlFor="discountCode" className="text-sm font-semibold">
-              קוד קופון
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="discountCode"
-                type="text"
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                disabled={!!appliedDiscount}
-                placeholder="הזיני קוד הנחה"
-                className="flex-1"
-              />
-              {appliedDiscount ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleRemoveDiscount}
-                  className="px-4 text-sm"
-                >
-                  הסר
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={handleApplyDiscount}
-                  disabled={validatingDiscount}
-                  className="px-4 text-sm"
-                >
-                  {validatingDiscount ? "בודק..." : "החל"}
-                </Button>
-              )}
-            </div>
-            {discountMessage && (
-              <p
-                className={`text-xs ${
-                  discountMessage.type === "success" ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {discountMessage.text}
-              </p>
-            )}
-            {appliedDiscount && (
-              <p className="text-xs font-medium text-green-600">
-                הנחה של ₪{appliedDiscount.amount.toFixed(0)} הוחלה!
-              </p>
-            )}
-          </div>
-
           {/* Order Summary */}
           <div className="space-y-2 rounded-lg bg-primary-light p-4">
             <div className="flex justify-between text-sm">
@@ -325,19 +210,13 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
               <span className="font-semibold">{sizeLabels[selectedSize]}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span>מחיר לפני הנחה:</span>
+              <span>סה"כ:</span>
               <span className="font-semibold">{formatPrice(calculateSubtotal())}</span>
             </div>
-            {appliedDiscount && (
-              <div className="flex justify-between text-sm text-green-600">
-                <span>הנחה ({appliedDiscount.code}):</span>
-                <span className="font-semibold">-{formatPrice(appliedDiscount.amount)}</span>
-              </div>
-            )}
             <div className="flex justify-between border-t border-primary pt-2">
-              <span className="font-semibold">סה&quot;כ:</span>
+              <span className="font-semibold">סה"כ לתשלום:</span>
               <span className="text-xl font-bold text-primary">
-                {formatPrice(calculateFinalTotal())}
+                {formatPrice(calculateSubtotal())}
               </span>
             </div>
             <p className="text-xs text-gray-600">* עלות משלוח תחושב בשלב הבא</p>

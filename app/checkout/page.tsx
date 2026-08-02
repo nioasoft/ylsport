@@ -16,7 +16,7 @@ interface OrderItem {
 
 type CheckoutStep = "order" | "shipping" | "processing";
 
-const PRODUCT_PRICE = 199;
+const PRODUCT_PRICE = 99;
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -26,9 +26,6 @@ export default function CheckoutPage() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const [discountCode, setDiscountCode] = useState<string>();
-  const [discountAmount, setDiscountAmount] = useState<number>();
-
   const calculateSubtotal = () => {
     return orderItems.reduce((sum, item) => sum + item.quantity * PRODUCT_PRICE, 0);
   };
@@ -37,20 +34,13 @@ export default function CheckoutPage() {
     trackAddToCart({ value: PRODUCT_PRICE });
   }, []);
 
-  const handleOrderSubmit = (
-    items: OrderItem[],
-    discountCode?: string,
-    discountAmount?: number
-  ) => {
+  const handleOrderSubmit = (items: OrderItem[]) => {
     setOrderItems(items);
-    setDiscountCode(discountCode);
-    setDiscountAmount(discountAmount);
     setStep("shipping");
 
     const subtotal = items.reduce((sum, item) => sum + item.quantity * PRODUCT_PRICE, 0);
     const numItems = items.reduce((sum, item) => sum + item.quantity, 0);
-    const total = subtotal - (discountAmount ?? 0);
-    trackInitiateCheckout({ value: total, numItems });
+    trackInitiateCheckout({ value: subtotal, numItems });
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -64,14 +54,12 @@ export default function CheckoutPage() {
 
         // SECURITY: Prices are NOT sent to the server — the server computes
         // them via `computeOrderPricing` in `lib/pricing.ts` using sizes +
-        // quantities + shipping method + discount code only. Sending prices
-        // here was a BOLA vulnerability (Iron Law #4).
+        // quantities + shipping method only. Sending prices here was a BOLA
+        // vulnerability (Iron Law #4).
         items: orderItems.map((item) => ({
           productSize: item.size,
           quantity: item.quantity,
         })),
-
-        discountCode,
       };
 
       // Create order via API
@@ -175,8 +163,6 @@ export default function CheckoutPage() {
           {step === "shipping" && (
             <ShippingForm
               subtotal={calculateSubtotal()}
-              discountCode={discountCode}
-              discountAmount={discountAmount}
               onSubmit={handleShippingSubmit}
               onBack={handleBack}
             />
