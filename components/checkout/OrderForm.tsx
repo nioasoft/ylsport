@@ -210,11 +210,11 @@ export function OrderForm({ onSubmit }: OrderFormProps) {
               <span className="font-semibold">{sizeLabels[selectedSize]}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span>סה"כ:</span>
+              <span>סה&quot;כ:</span>
               <span className="font-semibold">{formatPrice(calculateSubtotal())}</span>
             </div>
             <div className="flex justify-between border-t border-primary pt-2">
-              <span className="font-semibold">סה"כ לתשלום:</span>
+              <span className="font-semibold">סה&quot;כ לתשלום:</span>
               <span className="text-xl font-bold text-primary">
                 {formatPrice(calculateSubtotal())}
               </span>
